@@ -61,12 +61,8 @@ export default function FormInput({
           onBlur={() => setFocused(false)}
           style={{
             width: "100%",
-            background: focused
-              ? "#f0f9ff"
-              : "#f8fafc",
-            border: focused
-              ? "1px solid #0ea5e9"
-              : "1px solid #e2e8f0",
+            background: focused ? "#f0f9ff" : "#f8fafc",
+            border: focused ? "1px solid #0ea5e9" : "1px solid #e2e8f0",
             color: "#1e293b",
             fontSize: 13,
             fontFamily: "'Inter', sans-serif",

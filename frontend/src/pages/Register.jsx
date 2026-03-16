@@ -117,7 +117,14 @@ export default function Register() {
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
           <h1
             style={{
               fontSize: 42,
@@ -140,7 +147,8 @@ export default function Register() {
               maxWidth: "85%",
             }}
           >
-            Join thousands of teams using Spark to build incredible products. Start free, no credit card required.
+            Join thousands of teams using Spark to build incredible products.
+            Start free, no credit card required.
           </p>
 
           {/* Stats */}
@@ -211,7 +219,9 @@ export default function Register() {
                     fontWeight: 500,
                     textDecoration: "none",
                     color: t.active ? "#1e293b" : "#cbd5e1",
-                    borderBottom: t.active ? "2px solid #0ea5e9" : "2px solid transparent",
+                    borderBottom: t.active
+                      ? "2px solid #0ea5e9"
+                      : "2px solid transparent",
                     marginBottom: -1,
                     transition: "all 0.2s ease",
                     paddingBottom: "calc(12px - 2px)",
@@ -400,11 +410,7 @@ function BtnSubmit({ loading, success, label, loadingLabel, successLabel }) {
         width: "100%",
         position: "relative",
         overflow: "hidden",
-        background: success
-          ? "#dcfce7"
-          : hovered
-            ? "#0284c7"
-            : "#0ea5e9",
+        background: success ? "#dcfce7" : hovered ? "#0284c7" : "#0ea5e9",
         color: success ? "#166534" : "#ffffff",
         fontSize: 14,
         fontFamily: "'Inter', sans-serif",
