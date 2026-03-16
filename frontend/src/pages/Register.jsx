@@ -80,7 +80,7 @@ export default function Register() {
         style={{
           width: "50%",
           height: "100%",
-          background: "#0f1419",
+          background: "#000000",
           display: "flex",
           flexDirection: "column",
           padding: "48px 40px",
@@ -89,32 +89,15 @@ export default function Register() {
         }}
       >
         {/* Logo */}
-        <div
+        <img
+          src="/logo.jpeg"
+          alt="Spark Agency Logo"
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
+            height: 90,
+            objectFit: "contain",
+            marginBottom: 20,
           }}
-        >
-          <div
-            style={{
-              width: 24,
-              height: 24,
-              background: "#0ea5e9",
-              borderRadius: "6px",
-            }}
-          />
-          <span
-            style={{
-              fontSize: 18,
-              fontWeight: 700,
-              color: "#ffffff",
-              letterSpacing: "-0.5px",
-            }}
-          >
-            Spark
-          </span>
-        </div>
+        />
 
         {/* Content */}
         <div
