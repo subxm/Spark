@@ -6,7 +6,92 @@ const pool = require("../config/db");
 require("dotenv").config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const PRIMARY_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-1.5-flash";
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isRetryableGeminiError = (error) => {
+  const message = String(error?.message || "").toUpperCase();
+  return (
+    message.includes("503") ||
+    message.includes("SERVICEUNAVAILABLE") ||
+    message.includes("UNAVAILABLE") ||
+    message.includes("HIGH DEMAND") ||
+    message.includes("TRY AGAIN LATER")
+  );
+};
+
+const extractGeneratedCode = (result) => {
+  const parts = result?.response?.candidates?.[0]?.content?.parts || [];
+  const fromParts = parts
+    .map((part) => part?.text || "")
+    .join("")
+    .trim();
+  const fromTextFn =
+    typeof result?.response?.text === "function"
+      ? result.response.text().trim()
+      : "";
+  const text = fromParts || fromTextFn;
+
+  if (!text) {
+    throw new Error("Gemini returned an empty response.");
+  }
+
+  return text;
+};
+
+const generateWithModel = async (modelName, systemPrompt, userPrompt) => {
+  const model = genAI.getGenerativeModel({ model: modelName });
+  const result = await model.generateContent([
+    { text: systemPrompt },
+    { text: userPrompt },
+  ]);
+  return extractGeneratedCode(result);
+};
+
+const generateWithRetryAndFallback = async (systemPrompt, userPrompt) => {
+  const modelsToTry = [PRIMARY_MODEL];
+
+  if (FALLBACK_MODEL && FALLBACK_MODEL !== PRIMARY_MODEL) {
+    modelsToTry.push(FALLBACK_MODEL);
+  }
+
+  let lastError = null;
+
+  for (const modelName of modelsToTry) {
+    const maxAttempts = modelName === PRIMARY_MODEL ? 3 : 2;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        console.log(
+          `🤖 Gemini request -> model=${modelName}, attempt=${attempt}/${maxAttempts}`,
+        );
+        return await generateWithModel(modelName, systemPrompt, userPrompt);
+      } catch (error) {
+        lastError = error;
+        const retryable = isRetryableGeminiError(error);
+
+        if (!retryable) {
+          throw error;
+        }
+
+        if (attempt < maxAttempts) {
+          const backoffMs = 700 * 2 ** (attempt - 1);
+          console.warn(
+            `⚠️ Gemini transient failure (${modelName}) attempt ${attempt} -> retrying in ${backoffMs}ms`,
+          );
+          await delay(backoffMs);
+          continue;
+        }
+
+        console.warn(`⚠️ Model ${modelName} exhausted retries.`);
+      }
+    }
+  }
+
+  throw lastError || new Error("Generation failed after retries and fallback.");
+};
 
 // -------------------------------------------------------
 // GENERATE UI CODE FROM PROMPT
@@ -65,12 +150,10 @@ Requirements:
 
     const userPrompt = `Create a ${prompt}`;
 
-    const result = await model.generateContent([
-      { text: systemPrompt },
-      { text: userPrompt },
-    ]);
-
-    const generatedCode = result.response.candidates[0].content.parts[0].text;
+    const generatedCode = await generateWithRetryAndFallback(
+      systemPrompt,
+      userPrompt,
+    );
 
     // Save to database
     try {
@@ -111,6 +194,13 @@ Requirements:
       return res
         .status(429)
         .json({ message: "API quota exceeded. Try again later." });
+    }
+
+    if (isRetryableGeminiError(error)) {
+      return res.status(503).json({
+        message:
+          "AI model is temporarily busy. Please retry in a few seconds.",
+      });
     }
 
     return res.status(500).json({
