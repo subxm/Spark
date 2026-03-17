@@ -13,7 +13,7 @@
 
 **AI-powered UI Builder for rapid prompt-to-interface generation**
 
-Generate complete HTML/CSS/JS from natural language, preview instantly, and refine through a chat-style workflow.
+Generate polished interfaces from natural language, preview instantly, and refine through a chat-style workflow.
 
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
