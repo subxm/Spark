@@ -10,6 +10,7 @@ import {
   MessageSquare,
   ArrowUp,
 } from "lucide-react";
+import { generateCode as generateCodeRequest } from "../services/api";
 import "./Builder.css";
 
 export default function Builder() {
@@ -66,22 +67,8 @@ export default function Builder() {
     setGeneratedCode("");
 
     try {
-      const token = localStorage.getItem("token");
-
-      const res = await fetch("http://localhost:5000/api/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ prompt: trimmedPrompt }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to generate code");
-      }
+      const res = await generateCodeRequest(trimmedPrompt);
+      const data = res.data;
 
       setGeneratedCode(data.code);
       setChatMessages((previous) =>
