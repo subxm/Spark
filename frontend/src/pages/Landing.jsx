@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
-  Check,
   Code2,
   MessageSquareText,
   Plus,
@@ -57,7 +56,7 @@ const steps = [
   {
     title: "Describe Your Idea",
     description:
-      "Type a prompt like \"Build me a CRM dashboard with contacts and analytics.\" Be as detailed as you want.",
+      'Type a prompt like "Build me a CRM dashboard with contacts and analytics." Be as detailed as you want.',
   },
   {
     title: "AI Builds Your UI",
@@ -73,82 +72,22 @@ const steps = [
 
 const useCases = [
   {
+    preview: "landing",
     title: "Landing Pages",
     description:
       "Beautiful, conversion-optimized landing pages for products, launches, and campaigns. Ready in minutes.",
   },
   {
+    preview: "dashboard",
     title: "Dashboards",
     description:
       "Data-rich admin panels and analytics dashboards with charts, tables, and interactive widgets.",
   },
   {
+    preview: "saas",
     title: "SaaS Applications",
     description:
       "Full-featured SaaS products with authentication, billing integration, and scalable architecture.",
-  },
-];
-
-const testimonials = [
-  {
-    quote:
-      "Spark completely changed how we prototype. What used to take our team a week now takes 15 minutes. The code quality is surprisingly good too.",
-    author: "Sarah Lin",
-    role: "Product Lead at Vercel",
-  },
-  {
-    quote:
-      "As a non-technical founder, Spark is a game-changer. I built and launched my MVP in a single afternoon without writing a single line of code.",
-    author: "Marcus Rivera",
-    role: "Founder of NovaPay",
-  },
-  {
-    quote:
-      "We use Spark for rapid prototyping and client demos. The turnaround is insane. Our clients think we have a 50-person engineering team.",
-    author: "Aisha Khan",
-    role: "CTO at BuildStack",
-  },
-];
-
-const pricing = [
-  {
-    name: "Starter",
-    price: "$0",
-    description: "Perfect for trying out Spark.",
-    cta: "Get Started Free",
-    features: [
-      "5 projects",
-      "50 AI generations / mo",
-      "Basic code export",
-      "Community support",
-    ],
-  },
-  {
-    name: "Pro",
-    price: "$29",
-    description: "For professionals and small teams.",
-    cta: "Start Pro Trial",
-    popular: true,
-    features: [
-      "Unlimited projects",
-      "1,000 AI generations / mo",
-      "React and Vue export",
-      "Custom domains",
-      "Priority support",
-    ],
-  },
-  {
-    name: "Enterprise",
-    price: "$99",
-    description: "For large teams and organizations.",
-    cta: "Contact Sales",
-    features: [
-      "Everything in Pro",
-      "Unlimited AI generations",
-      "Team collaboration (10 seats)",
-      "SSO and audit logs",
-      "Dedicated account manager",
-    ],
   },
 ];
 
@@ -180,6 +119,50 @@ const faqs = [
   },
 ];
 
+function Reveal({ as: Tag = "div", className = "", children, ...props }) {
+  const [isVisible, setIsVisible] = useState(false);
+  const elementRef = useRef(null);
+
+  useEffect(() => {
+    const element = elementRef.current;
+    if (!element || isVisible) return;
+
+    if (!("IntersectionObserver" in window)) {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.16,
+        rootMargin: "0px 0px -8% 0px",
+      },
+    );
+
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, [isVisible]);
+
+  return (
+    <Tag
+      ref={elementRef}
+      className={`${className} reveal ${isVisible ? "is-visible" : ""}`.trim()}
+      {...props}
+    >
+      {children}
+    </Tag>
+  );
+}
+
 export default function Landing() {
   const navigate = useNavigate();
   const { token } = useAuth();
@@ -207,193 +190,206 @@ export default function Landing() {
     <div className="landing-page">
       <header className={`landing-nav ${isScrolled ? "is-scrolled" : ""}`}>
         <div className="landing-nav-inner">
-          <button className="brand" onClick={() => handleScrollTo("top")}>Spark</button>
+          <button className="brand" onClick={() => handleScrollTo("top")}>
+            Spark
+          </button>
           <div className="nav-links">
             <button onClick={() => handleScrollTo("features")}>Features</button>
             <button onClick={() => handleScrollTo("how")}>How It Works</button>
-            <button onClick={() => handleScrollTo("pricing")}>Pricing</button>
           </div>
           <div className="nav-actions">
-            <button className="btn btn-ghost" onClick={() => navigate("/login")}>Log in</button>
-            <button className="btn btn-dark" onClick={handleGetStarted}>Get Started</button>
+            <button
+              className="btn btn-ghost"
+              onClick={() => navigate("/login")}
+            >
+              Log in
+            </button>
+            <button className="btn btn-dark" onClick={handleGetStarted}>
+              Get Started
+            </button>
           </div>
         </div>
       </header>
 
       <main id="top">
         <section className="hero section">
-          <div className="hero-copy reveal">
-            <span className="beta-pill">Now in Public Beta - Try it Free</span>
+          <Reveal as="div" className="hero-copy">
             <h1>
-              Build anything
+              Code is optional.
               <br />
-              with just a prompt.
+              Ideas aren't.
             </h1>
             <p>
-              Spark transforms your ideas into fully functional apps, websites, and tools.
-              Just describe what you want, and watch AI build it in seconds.
+              Spark transforms your ideas into fully functional apps, websites,
+              and tools. Just describe what you want, and watch AI build it in
+              seconds.
             </p>
             <div className="hero-actions">
               <button className="btn btn-dark" onClick={handleGetStarted}>
                 Start Building Free <ArrowRight size={18} />
               </button>
-              <button className="btn btn-soft" onClick={() => handleScrollTo("how")}>Watch Demo</button>
             </div>
-            <small>12,000+ builders already onboard</small>
-          </div>
+          </Reveal>
 
-          <div className="hero-console reveal">
+          <Reveal as="div" className="hero-console">
             <div className="console-head">
               <span>spark-builder</span>
             </div>
             <div className="console-body">
-              <p className="prompt">Build me a SaaS dashboard with user analytics, revenue charts, and sidebar navigation.</p>
-              <div className="progress-line"><span /> Layout structure generated</div>
-              <div className="progress-line"><span /> Components built</div>
-              <div className="progress-line"><span /> Charts and data visualized</div>
+              <p className="prompt">
+                Build me a SaaS dashboard with user analytics, revenue charts,
+                and sidebar navigation.
+              </p>
+              <div className="progress-line">
+                <span /> Layout structure generated
+              </div>
+              <div className="progress-line">
+                <span /> Components built
+              </div>
+              <div className="progress-line">
+                <span /> Charts and data visualized
+              </div>
               <div className="console-status">Deploying to preview...</div>
             </div>
-          </div>
-        </section>
-
-        <section className="trusted section-tight reveal">
-          <p>Trusted by teams at</p>
-          <div>
-            {"Google Meta Stripe Vercel Shopify Notion".split(" ").map((name) => (
-              <span key={name}>{name}</span>
-            ))}
-          </div>
+          </Reveal>
         </section>
 
         <section id="features" className="section section-alt">
-          <div className="section-title reveal">
+          <Reveal as="div" className="section-title">
             <h2>Everything you need to build faster</h2>
-            <p>Powerful AI capabilities packed into a simple, intuitive interface. No learning curve needed.</p>
-          </div>
+            <p>
+              Powerful AI capabilities packed into a simple, intuitive
+              interface. No learning curve needed.
+            </p>
+          </Reveal>
           <div className="feature-grid">
             {features.map((feature) => {
               const Icon = feature.icon;
               return (
-                <article key={feature.title} className="feature-card reveal">
+                <Reveal
+                  key={feature.title}
+                  as="article"
+                  className="feature-card"
+                >
                   <div className="icon-wrap">
                     <Icon size={18} />
                   </div>
                   <h3>{feature.title}</h3>
                   <p>{feature.description}</p>
-                </article>
+                </Reveal>
               );
             })}
           </div>
         </section>
 
         <section id="how" className="section">
-          <div className="section-title reveal">
+          <Reveal as="div" className="section-title">
             <h2>Three steps to launch anything</h2>
             <p>From idea to production in minutes, not months.</p>
-          </div>
+          </Reveal>
           <div className="steps-grid">
             {steps.map((step, idx) => (
-              <article key={step.title} className="step-card reveal">
+              <Reveal key={step.title} as="article" className="step-card">
                 <span className="step-number">{idx + 1}</span>
                 <h3>{step.title}</h3>
                 <p>{step.description}</p>
-              </article>
+              </Reveal>
             ))}
           </div>
         </section>
 
         <section className="section section-alt">
-          <div className="section-title reveal">
+          <Reveal as="div" className="section-title">
             <h2>Build anything you imagine</h2>
-            <p>From quick prototypes to production apps, Spark handles it all.</p>
-          </div>
+            <p>
+              From quick prototypes to production apps, Spark handles it all.
+            </p>
+          </Reveal>
           <div className="usecase-grid">
             {useCases.map((item) => (
-              <article key={item.title} className="usecase-card reveal">
-                <div className="thumb" />
+              <Reveal key={item.title} as="article" className="usecase-card">
+                <div
+                  className={`thumb thumb-${item.preview}`}
+                  aria-hidden="true"
+                >
+                  {item.preview === "landing" && (
+                    <>
+                      <div className="thumb-topbar" />
+                      <div className="thumb-title" />
+                      <div className="thumb-line" />
+                      <div className="thumb-line short" />
+                      <div className="thumb-cta" />
+                    </>
+                  )}
+
+                  {item.preview === "dashboard" && (
+                    <>
+                      <div className="dash-head" />
+                      <div className="dash-grid">
+                        <span />
+                        <span />
+                        <span />
+                      </div>
+                      <div className="dash-chart">
+                        <b />
+                        <b />
+                        <b />
+                        <b />
+                        <b />
+                      </div>
+                    </>
+                  )}
+
+                  {item.preview === "saas" && (
+                    <>
+                      <div className="saas-head" />
+                      <div className="saas-cols">
+                        <span />
+                        <span />
+                      </div>
+                      <div className="saas-footer" />
+                    </>
+                  )}
+                </div>
                 <h3>{item.title}</h3>
                 <p>{item.description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="section dark-section">
-          <div className="section-title reveal">
-            <h2>Loved by builders worldwide</h2>
-          </div>
-          <div className="testimonial-grid">
-            {testimonials.map((item) => (
-              <article key={item.author} className="testimonial-card reveal">
-                <p>"{item.quote}"</p>
-                <div>
-                  <strong>{item.author}</strong>
-                  <span>{item.role}</span>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section id="pricing" className="section">
-          <div className="section-title reveal">
-            <h2>Simple, transparent pricing</h2>
-            <p>Start free. Scale when you are ready. No hidden fees.</p>
-          </div>
-          <div className="pricing-grid">
-            {pricing.map((plan) => (
-              <article key={plan.name} className={`price-card ${plan.popular ? "popular" : ""} reveal`}>
-                {plan.popular && <span className="popular-tag">Most Popular</span>}
-                <h3>{plan.name}</h3>
-                <p className="price">
-                  {plan.price}
-                  <span>/month</span>
-                </p>
-                <p className="price-desc">{plan.description}</p>
-                <button className={`btn ${plan.popular ? "btn-dark" : "btn-soft"}`} onClick={handleGetStarted}>
-                  {plan.cta}
-                </button>
-                <ul>
-                  {plan.features.map((feature) => (
-                    <li key={feature}>
-                      <Check size={16} />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </article>
+              </Reveal>
             ))}
           </div>
         </section>
 
         <section className="section section-alt">
-          <div className="section-title reveal">
+          <Reveal as="div" className="section-title">
             <h2>Frequently asked questions</h2>
-          </div>
+          </Reveal>
           <div className="faq-wrap">
             {faqs.map((faq, idx) => {
               const open = openFaq === idx;
               return (
-                <article key={faq.question} className={`faq-item ${open ? "open" : ""} reveal`}>
+                <Reveal
+                  key={faq.question}
+                  as="article"
+                  className={`faq-item ${open ? "open" : ""}`}
+                >
                   <button onClick={() => setOpenFaq(open ? null : idx)}>
                     <span>{faq.question}</span>
                     <Plus size={18} />
                   </button>
                   {open && <p>{faq.answer}</p>}
-                </article>
+                </Reveal>
               );
             })}
           </div>
         </section>
 
         <section className="section cta-section dark-section">
-          <div className="section-title reveal">
+          <Reveal as="div" className="section-title">
             <h2>Start building with AI today</h2>
             <p>
-              Join 12,000+ builders who are shipping faster with Spark. No credit card required.
-              Start free and upgrade when you are ready.
+              Join 12,000+ builders who are shipping faster with Spark. No
+              credit card required. Start free and upgrade when you are ready.
             </p>
-          </div>
+          </Reveal>
           <button className="btn btn-accent" onClick={handleGetStarted}>
             Get Started Free <ArrowRight size={18} />
           </button>
@@ -401,32 +397,32 @@ export default function Landing() {
       </main>
 
       <footer className="landing-footer">
-        <div className="footer-grid">
-          <div>
-            <h4>Product</h4>
-            <a href="#features">Features</a>
-            <a href="#pricing">Pricing</a>
-            <a href="#top">Changelog</a>
-            <a href="#top">Documentation</a>
-          </div>
-          <div>
-            <h4>Company</h4>
-            <a href="#top">About</a>
-            <a href="#top">Blog</a>
-            <a href="#top">Careers</a>
-            <a href="#top">Contact</a>
-          </div>
-          <div>
-            <h4>Legal</h4>
-            <a href="#top">Privacy Policy</a>
-            <a href="#top">Terms of Service</a>
-            <a href="#top">Cookie Policy</a>
-            <a href="#top">Security</a>
+        <div className="footer-profile">
+          <h4>Built by Subham Singh Negi</h4>
+          <p>Connect with me</p>
+          <div className="footer-links">
+            <a
+              href="https://github.com/subxm/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              GitHub
+            </a>
+            <a
+              href="https://www.linkedin.com/in/subxm/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              LinkedIn
+            </a>
+            <a href="mailto:subhamsinghnegi03@gmail.com">Email</a>
+            <a href="https://www.subxm.me/" target="_blank" rel="noreferrer">
+              Portfolio
+            </a>
           </div>
         </div>
         <div className="footer-meta">
-          <p>© 2025 Spark AI. All rights reserved.</p>
-          <small>All systems operational</small>
+          <p>© 2026 Subham Singh Negi. All rights reserved.</p>
         </div>
       </footer>
     </div>

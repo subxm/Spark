@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import "./FormInput.css";
 
 export default function FormInput({
   label,
@@ -17,42 +18,18 @@ export default function FormInput({
   const isPasswordField = type === "password";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
-      <label
-        style={{
-          display: "block",
-          fontSize: 12,
-          fontWeight: 600,
-          color: "#334155",
-          letterSpacing: "0.4px",
-          textTransform: "uppercase",
-          marginBottom: 8,
-        }}
-      >
-        {label}
-      </label>
-      <div
-        style={{
-          position: "relative",
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
+    <div
+      className={`fi-root ${focused ? "is-focused" : ""} ${error ? "has-error" : ""}`.trim()}
+    >
+      {label && <label className="fi-label">{label}</label>}
+
+      <div className="fi-field">
         {Icon && (
-          <div
-            style={{
-              position: "absolute",
-              left: 12,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: focused ? "#0ea5e9" : "#64748b",
-              transition: "color 0.2s ease",
-            }}
-          >
-            <Icon size={18} />
+          <div className="fi-icon">
+            <Icon size={16} />
           </div>
         )}
+
         <input
           type={isPasswordField && !showPassword ? "password" : "text"}
           name={name}
@@ -62,105 +39,44 @@ export default function FormInput({
           required
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          style={{
-            width: "100%",
-            background: focused ? "#f0f9ff" : "#f8fafc",
-            border: focused ? "1px solid #0ea5e9" : "1px solid #e2e8f0",
-            color: "#1e293b",
-            fontSize: 13,
-            fontFamily: "'Inter', sans-serif",
-            padding: Icon ? "11px 13px 11px 40px" : "11px 13px",
-            paddingRight: isPasswordField ? 40 : undefined,
-            borderRadius: 8,
-            outline: "none",
-            boxSizing: "border-box",
-            transition: "all 0.2s ease",
-          }}
+          className={`fi-input ${Icon ? "with-icon" : ""} ${isPasswordField ? "with-toggle" : ""}`.trim()}
         />
+
         {isPasswordField && (
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            style={{
-              position: "absolute",
-              right: 12,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "transparent",
-              border: "none",
-              color: focused ? "#0ea5e9" : "#64748b",
-              cursor: "pointer",
-              padding: 0,
-              transition: "color 0.2s ease",
-            }}
+            className="fi-toggle"
             onMouseDown={(e) => e.preventDefault()}
           >
-            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         )}
       </div>
+
       {strength > 0 && (
-        <div style={{ marginTop: 8 }}>
-          <div
-            style={{
-              display: "flex",
-              gap: 4,
-              height: 3,
-              borderRadius: 2,
-              overflow: "hidden",
-            }}
-          >
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                style={{
-                  flex: 1,
-                  background:
-                    i < strength
-                      ? strength === 1
-                        ? "#ef4444"
-                        : strength === 2
-                          ? "#f97316"
-                          : "#22c55e"
-                      : "rgba(255,255,255,0.05)",
-                  borderRadius: 2,
-                  transition: "background 0.3s ease",
-                }}
-              />
-            ))}
+        <div className="fi-strength">
+          <div className="fi-strength-bars">
+            {[1, 2, 3].map((level) => {
+              const tone =
+                strength === 1 ? "weak" : strength === 2 ? "fair" : "strong";
+              return (
+                <span
+                  key={level}
+                  className={`${level <= strength ? `active ${tone}` : ""}`.trim()}
+                />
+              );
+            })}
           </div>
           <span
-            style={{
-              fontSize: 10,
-              color:
-                strength === 1
-                  ? "#ef4444"
-                  : strength === 2
-                    ? "#f97316"
-                    : "#10b981",
-              marginTop: 4,
-              display: "block",
-            }}
+            className={`fi-strength-label ${strength === 1 ? "weak" : strength === 2 ? "fair" : "strong"}`}
           >
             {strength === 1 ? "Weak" : strength === 2 ? "Fair" : "Strong"}
           </span>
         </div>
       )}
-      {error && (
-        <div
-          style={{
-            fontSize: 11,
-            color: "#ef4444",
-            marginTop: 6,
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-          }}
-        >
-          ⚠ {error}
-        </div>
-      )}
+
+      {error && <div className="fi-error">{error}</div>}
     </div>
   );
 }
