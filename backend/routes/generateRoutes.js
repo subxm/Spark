@@ -25,20 +25,45 @@ router.post("/", authMiddleware, async (req, res) => {
     // Call Gemini API to generate code
     console.log("🤖 Calling Gemini API with prompt:", prompt);
 
-    const systemPrompt = `You are an expert web developer. Create a beautiful, modern HTML/JSX component based on this user prompt.
+    const systemPrompt = `You are an expert web developer. Create a well-structured HTML component based on the user's prompt.
+
+IMPORTANT: Return the code in this EXACT structure:
+
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Component</title>
+  <style>
+    /* CSS organized by sections with comments */
+    /* =========================== */
+    /* Put your CSS here */
+    /* =========================== */
+  </style>
+</head>
+<body>
+  <!-- HTML Structure -->
+  <div class="container">
+    <!-- Your HTML content here -->
+  </div>
+  
+  <script>
+    // Optional: Add minimal JavaScript if needed
+  </script>
+</body>
+</html>
 
 Requirements:
-- Generate ONLY valid HTML or JSX code
-- Use inline styles (no external CSS)
-- Make it visually appealing with modern design
-- Use a nice color palette or gradients
-- Ensure it's self-contained and works standalone
-- Return ONLY the code, no explanations or markdown
-- No code blocks (triple backticks), just raw HTML/JSX
+- Create a complete, valid HTML page
+- Organize CSS in the <style> section (NOT inline)
+- Use comments to separate sections (HTML, CSS)
+- Make it visually stunning with modern design
+- Use professional color palettes and layouts
+- Ensure responsive design
+- Return ONLY the HTML code, no markdown or explanations
+- No code blocks (triple backticks)`;
 
-Start with <div or <section and close properly.`;
-
-    const userPrompt = `Create based on: "${prompt}"`;
+    const userPrompt = `Create a ${prompt}`;
 
     const result = await model.generateContent([
       { text: systemPrompt },
