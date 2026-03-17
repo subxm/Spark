@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Builder from "./pages/Builder";
 
 // Protected route — redirects to login if not authenticated
 const ProtectedRoute = ({ children }) => {
@@ -19,9 +20,7 @@ function AppRoutes() {
         path="/builder"
         element={
           <ProtectedRoute>
-            <div className="text-white text-2xl p-10">
-              ⚡ Builder page coming next!
-            </div>
+            <Builder />
           </ProtectedRoute>
         }
       />

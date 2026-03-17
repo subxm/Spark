@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function FormInput({
   label,
@@ -12,6 +13,8 @@ export default function FormInput({
   strength,
 }) {
   const [focused, setFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const isPasswordField = type === "password";
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
@@ -51,7 +54,7 @@ export default function FormInput({
           </div>
         )}
         <input
-          type={type}
+          type={isPasswordField && !showPassword ? "password" : "text"}
           name={name}
           value={value}
           onChange={onChange}
@@ -67,12 +70,35 @@ export default function FormInput({
             fontSize: 13,
             fontFamily: "'Inter', sans-serif",
             padding: Icon ? "11px 13px 11px 40px" : "11px 13px",
+            paddingRight: isPasswordField ? 40 : undefined,
             borderRadius: 8,
             outline: "none",
             boxSizing: "border-box",
             transition: "all 0.2s ease",
           }}
         />
+        {isPasswordField && (
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            style={{
+              position: "absolute",
+              right: 12,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "transparent",
+              border: "none",
+              color: focused ? "#0ea5e9" : "#64748b",
+              cursor: "pointer",
+              padding: 0,
+              transition: "color 0.2s ease",
+            }}
+            onMouseDown={(e) => e.preventDefault()}
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        )}
       </div>
       {strength > 0 && (
         <div style={{ marginTop: 8 }}>
