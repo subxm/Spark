@@ -1,21 +1,65 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Send, Copy, RotateCcw, LogOut } from "lucide-react";
+import {
+  Copy,
+  LogOut,
+  Sparkles,
+  Eye,
+  Code2,
+  Mic,
+  MessageSquare,
+  ArrowUp,
+} from "lucide-react";
+import "./Builder.css";
 
 export default function Builder() {
   const { user, logout } = useAuth();
   const [prompt, setPrompt] = useState("");
+  const [chatMessages, setChatMessages] = useState([
+    {
+      id: "assistant-welcome",
+      role: "assistant",
+      text: "Describe what you want to build, then keep refining with follow-up prompts.",
+    },
+  ]);
   const [generatedCode, setGeneratedCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("preview");
   const [copied, setCopied] = useState(false);
+  const [leftPaneWidth, setLeftPaneWidth] = useState(36);
+  const [isResizing, setIsResizing] = useState(false);
+  const shellRef = useRef(null);
+  const chatScrollRef = useRef(null);
+
+  const promptIdeas = [
+    "A modern SaaS pricing page with annual toggle",
+    "A task dashboard with kanban and analytics cards",
+    "A portfolio site with hero, projects, and contact form",
+  ];
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) {
+    if (loading) return;
+    const trimmedPrompt = prompt.trim();
+
+    if (!trimmedPrompt) {
       setError("Please enter a prompt");
       return;
     }
+
+    const timestamp = Date.now();
+    const pendingId = `assistant-pending-${timestamp}`;
+
+    setChatMessages((previous) => [
+      ...previous,
+      { id: `user-${timestamp}`, role: "user", text: trimmedPrompt },
+      {
+        id: pendingId,
+        role: "assistant",
+        text: "Generating updated output...",
+      },
+    ]);
+    setPrompt("");
 
     setLoading(true);
     setError("");
@@ -23,8 +67,6 @@ export default function Builder() {
 
     try {
       const token = localStorage.getItem("token");
-      console.log("🔑 Token:", token ? "Present" : "Missing");
-      console.log("📤 Sending prompt to backend:", prompt);
 
       const res = await fetch("http://localhost:5000/api/generate", {
         method: "POST",
@@ -32,22 +74,39 @@ export default function Builder() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt: trimmedPrompt }),
       });
 
-      console.log("📥 Response status:", res.status);
       const data = await res.json();
-      console.log("📥 Response data:", data);
 
       if (!res.ok) {
         throw new Error(data.message || "Failed to generate code");
       }
 
       setGeneratedCode(data.code);
+      setChatMessages((previous) =>
+        previous.map((message) =>
+          message.id === pendingId
+            ? {
+                ...message,
+                text: "Output updated. Keep going with your next refinement.",
+              }
+            : message,
+        ),
+      );
       setLoading(false);
     } catch (err) {
-      console.error("❌ Error:", err);
       setError(err.message || "Failed to generate. Try again.");
+      setChatMessages((previous) =>
+        previous.map((message) =>
+          message.id === pendingId
+            ? {
+                ...message,
+                text: err.message || "Generation failed. Please try again.",
+              }
+            : message,
+        ),
+      );
       setLoading(false);
     }
   };
@@ -63,432 +122,256 @@ export default function Builder() {
     setGeneratedCode("");
     setError("");
     setActiveTab("preview");
+    setChatMessages((previous) => [
+      ...previous,
+      {
+        id: `assistant-clear-${Date.now()}`,
+        role: "assistant",
+        text: "Cleared current output. Prompt again to generate a fresh version.",
+      },
+    ]);
   };
 
+  const handlePromptKeyDown = (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      handleGenerate();
+    }
+  };
+
+  const handleResizeStart = () => {
+    if (window.innerWidth <= 1040) return;
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (event) => {
+      if (!shellRef.current) return;
+      const rect = shellRef.current.getBoundingClientRect();
+      const next = ((event.clientX - rect.left) / rect.width) * 100;
+      const clamped = Math.min(58, Math.max(28, next));
+      setLeftPaneWidth(clamped);
+    };
+
+    const stopResize = () => setIsResizing(false);
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", stopResize);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", stopResize);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isResizing]);
+
+  useEffect(() => {
+    if (!chatScrollRef.current) return;
+    chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+  }, [chatMessages]);
+
+  const previewDoc = (() => {
+    if (!generatedCode) return "";
+    const frameReset =
+      "<style>html,body{margin:0 !important;padding:0 !important;min-height:100%;}body{box-sizing:border-box;}</style>";
+
+    if (/<head[\s>]/i.test(generatedCode)) {
+      return generatedCode.replace(/<head([^>]*)>/i, `<head$1>${frameReset}`);
+    }
+
+    return `<!doctype html><html><head>${frameReset}</head><body>${generatedCode}</body></html>`;
+  })();
+
   return (
-    <div
-      style={{
-        fontFamily: "'Inter', sans-serif",
-        display: "flex",
-        height: "100vh",
-        width: "100vw",
-        overflow: "hidden",
-        position: "fixed",
-        top: 0,
-        left: 0,
-        background: "#ffffff",
-      }}
-    >
-      {/* ── LEFT PANEL: INPUT ── */}
+    <div className="builder-page">
       <div
-        style={{
-          width: "35%",
-          height: "100%",
-          background: "#000000",
-          display: "flex",
-          flexDirection: "column",
-          padding: "32px 28px",
-          borderRight: "1px solid #1a1f2e",
-          overflowY: "auto",
-        }}
+        className="builder-shell"
+        ref={shellRef}
+        style={{ "--builder-left-width": `${leftPaneWidth}%` }}
       >
-        {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 32,
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontSize: 18,
-                fontWeight: 700,
-                color: "#ffffff",
-                marginBottom: 4,
-              }}
-            >
-              Spark Builder
+        <aside className="builder-left-panel">
+          <div className="builder-left-head">
+            <div>
+              <h1>Spark Builder</h1>
+              <p>Welcome, {user?.name || "Builder"}</p>
             </div>
-            <div style={{ fontSize: 12, color: "#64748b" }}>
-              Welcome, {user?.name || "Builder"}
-            </div>
-          </div>
-          <button
-            onClick={logout}
-            style={{
-              background: "transparent",
-              border: "1px solid #404854",
-              color: "#e0e0e0",
-              padding: "8px 12px",
-              borderRadius: 6,
-              cursor: "pointer",
-              fontSize: 12,
-              fontWeight: 500,
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = "#1a1f2e";
-              e.target.style.borderColor = "#0ea5e9";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = "transparent";
-              e.target.style.borderColor = "#404854";
-            }}
-          >
-            <LogOut size={14} />
-            Logout
-          </button>
-        </div>
-
-        {/* Prompt Input */}
-        <div style={{ flex: 1 }}>
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "#cbd5e1",
-              textTransform: "uppercase",
-              letterSpacing: "0.4px",
-              marginBottom: 12,
-            }}
-          >
-            UI Prompt
-          </div>
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe the UI you want to build... e.g., 'A pricing page with 3 tiers and comparison table'"
-            style={{
-              width: "100%",
-              height: 240,
-              background: "#0f1419",
-              border: "1px solid #404854",
-              color: "#e0e0e0",
-              fontSize: 13,
-              fontFamily: "'Inter', sans-serif",
-              padding: "14px",
-              borderRadius: 8,
-              outline: "none",
-              boxSizing: "border-box",
-              resize: "none",
-              transition: "all 0.2s",
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = "#0ea5e9";
-              e.target.style.boxShadow = "0 0 0 3px rgba(14, 165, 233, 0.1)";
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = "#404854";
-              e.target.style.boxShadow = "none";
-            }}
-          />
-
-          {error && (
-            <div
-              style={{
-                background: "#fee2e2",
-                border: "1px solid #fecaca",
-                color: "#991b1b",
-                fontSize: 12,
-                borderRadius: 6,
-                padding: "10px 12px",
-                marginTop: 12,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              <span>⚠</span>
-              {error}
-            </div>
-          )}
-
-          {generatedCode && (
-            <div
-              style={{
-                background: "#dcfce7",
-                border: "1px solid #bbf7d0",
-                color: "#166534",
-                fontSize: 12,
-                borderRadius: 6,
-                padding: "10px 12px",
-                marginTop: 12,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              <span>✓</span>
-              Code generated successfully!
-            </div>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
-          <button
-            onClick={handleGenerate}
-            disabled={loading}
-            style={{
-              flex: 1,
-              background: loading ? "#404854" : "#0ea5e9",
-              color: "#ffffff",
-              border: "none",
-              padding: "12px 16px",
-              borderRadius: 6,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: loading ? "not-allowed" : "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6,
-              transition: "all 0.2s",
-              fontFamily: "'Inter', sans-serif",
-            }}
-            onMouseEnter={(e) => {
-              if (!loading) e.target.style.background = "#0284c7";
-            }}
-            onMouseLeave={(e) => {
-              if (!loading) e.target.style.background = "#0ea5e9";
-            }}
-          >
-            {loading ? (
-              <>
-                <div
-                  style={{
-                    width: 12,
-                    height: 12,
-                    borderRadius: "50%",
-                    border: "2px solid rgba(255,255,255,0.3)",
-                    borderTopColor: "#ffffff",
-                    animation: "spin 0.8s linear infinite",
-                  }}
-                />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Send size={14} />
-                Generate
-              </>
-            )}
-          </button>
-
-          {generatedCode && (
-            <button
-              onClick={handleClear}
-              style={{
-                background: "#404854",
-                color: "#e0e0e0",
-                border: "none",
-                padding: "12px 16px",
-                borderRadius: 6,
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                transition: "all 0.2s",
-                fontFamily: "'Inter', sans-serif",
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.background = "#505860";
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = "#404854";
-              }}
-            >
-              <RotateCcw size={14} />
-              Clear
+            <button className="builder-logout" onClick={logout}>
+              <LogOut size={14} />
+              Logout
             </button>
-          )}
-        </div>
-      </div>
+          </div>
 
-      {/* ── RIGHT PANEL: PREVIEW & CODE ── */}
-      <div
-        style={{
-          width: "65%",
-          height: "100%",
-          background: "#ffffff",
-          display: "flex",
-          flexDirection: "column",
-          padding: "32px",
-          overflowY: "auto",
-        }}
-      >
-        {/* Tabs */}
-        {generatedCode && (
-          <div style={{ marginBottom: 24 }}>
-            <div
-              style={{
-                display: "flex",
-                gap: 1,
-                borderBottom: "1px solid #e2e8f0",
-                marginBottom: 0,
-              }}
-            >
-              {[
-                { id: "preview", label: "Preview" },
-                { id: "code", label: "Code" },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    padding: "12px 0",
-                    fontSize: 13,
-                    fontWeight: 500,
-                    textDecoration: "none",
-                    color: activeTab === tab.id ? "#1e293b" : "#cbd5e1",
-                    borderBottom:
-                      activeTab === tab.id
-                        ? "2px solid #0ea5e9"
-                        : "2px solid transparent",
-                    marginBottom: -1,
-                    transition: "all 0.2s ease",
-                    paddingBottom: "calc(12px - 2px)",
-                    marginRight: 24,
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    fontFamily: "'Inter', sans-serif",
-                  }}
+          <div className="builder-upper-area">
+            <section className="builder-chat-panel" ref={chatScrollRef}>
+              {chatMessages.map((message) => (
+                <article
+                  key={message.id}
+                  className={`builder-chat-item ${message.role === "user" ? "user" : "assistant"}`}
                 >
-                  {tab.label}
+                  <span className="builder-chat-role">
+                    {message.role === "user" ? "You" : "Spark"}
+                  </span>
+                  <p>{message.text}</p>
+                </article>
+              ))}
+              {loading && (
+                <div className="builder-chat-typing">Spark is thinking...</div>
+              )}
+            </section>
+          </div>
+
+          <div className="builder-bottom-area">
+            <div className="builder-input-label">UI Prompt</div>
+
+            <div className="builder-ideas">
+              {promptIdeas.map((idea) => (
+                <button
+                  key={idea}
+                  type="button"
+                  className="builder-idea-chip"
+                  onClick={() => setPrompt(idea)}
+                >
+                  {idea}
                 </button>
               ))}
             </div>
-          </div>
-        )}
 
-        {/* Content */}
-        {!generatedCode ? (
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "column",
-              color: "#94a3b8",
-            }}
-          >
-            <div style={{ fontSize: 48, marginBottom: 16 }}>✨</div>
-            <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
-              Ready to create?
-            </div>
-            <div style={{ fontSize: 14 }}>
-              Enter a prompt and click Generate to see the magic happen
-            </div>
-          </div>
-        ) : activeTab === "preview" ? (
-          <div
-            style={{
-              flex: 1,
-              background: "#f8fafc",
-              borderRadius: 8,
-              border: "1px solid #e2e8f0",
-              overflow: "auto",
-              padding: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <div
-              dangerouslySetInnerHTML={{ __html: generatedCode }}
-              style={{
-                width: "100%",
-                height: "100%",
-              }}
-            />
-          </div>
-        ) : (
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 12,
-              }}
-            >
-              <div style={{ fontSize: 13, color: "#64748b", fontWeight: 500 }}>
-                Generated Code
+            <div className="builder-compose">
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={handlePromptKeyDown}
+                placeholder="Ask Spark to create a web app that..."
+                className="builder-compose-input"
+              />
+
+              <div className="builder-compose-actions">
+                <div className="builder-compose-tools">
+                  <button
+                    type="button"
+                    className="builder-tool-btn"
+                    aria-label="Prompt mode"
+                  >
+                    <MessageSquare size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    className="builder-tool-btn"
+                    aria-label="Voice prompt"
+                  >
+                    <Mic size={15} />
+                  </button>
+                </div>
+
+                <div className="builder-compose-submit">
+                  {generatedCode && (
+                    <button
+                      type="button"
+                      className="builder-clear-link"
+                      onClick={handleClear}
+                    >
+                      Clear
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleGenerate}
+                    disabled={loading}
+                    className="builder-send-btn"
+                    aria-label="Generate output"
+                  >
+                    {loading ? (
+                      <span className="builder-spinner" />
+                    ) : (
+                      <ArrowUp size={16} />
+                    )}
+                  </button>
+                </div>
               </div>
+            </div>
+
+            {error && <div className="builder-alert error">{error}</div>}
+          </div>
+        </aside>
+
+        <div
+          className={`builder-resizer ${isResizing ? "is-active" : ""}`.trim()}
+          onMouseDown={handleResizeStart}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize builder panels"
+        />
+
+        <section className="builder-right-panel">
+          <div className="builder-right-head">
+            <h2>Output Workspace</h2>
+            <p>Preview and inspect the generated result instantly.</p>
+          </div>
+
+          {generatedCode && (
+            <div className="builder-tabs">
               <button
-                onClick={handleCopyCode}
-                style={{
-                  background: copied ? "#dcfce7" : "#f1f5f9",
-                  color: copied ? "#166534" : "#475569",
-                  border: "1px solid #e2e8f0",
-                  padding: "6px 12px",
-                  borderRadius: 4,
-                  fontSize: 12,
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  transition: "all 0.2s",
-                  fontFamily: "'Inter', sans-serif",
-                }}
-                onMouseEnter={(e) => {
-                  if (!copied) {
-                    e.target.style.background = "#e2e8f0";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!copied) {
-                    e.target.style.background = "#f1f5f9";
-                  }
-                }}
+                className={`builder-tab ${activeTab === "preview" ? "active" : ""}`.trim()}
+                onClick={() => setActiveTab("preview")}
               >
-                <Copy size={12} />
-                {copied ? "Copied!" : "Copy Code"}
+                <Eye size={14} />
+                Preview
+              </button>
+              <button
+                className={`builder-tab ${activeTab === "code" ? "active" : ""}`.trim()}
+                onClick={() => setActiveTab("code")}
+              >
+                <Code2 size={14} />
+                Code
               </button>
             </div>
-            <pre
-              style={{
-                flex: 1,
-                background: "#0f1419",
-                color: "#e0e0e0",
-                padding: "16px",
-                borderRadius: 8,
-                overflow: "auto",
-                margin: 0,
-                fontSize: 12,
-                fontFamily: "'Fira Code', monospace",
-                lineHeight: 1.5,
-              }}
-            >
-              <code>{generatedCode}</code>
-            </pre>
-          </div>
-        )}
-      </div>
+          )}
 
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+          {!generatedCode ? (
+            <div className="builder-empty-state">
+              <div className="builder-empty-icon">
+                <Sparkles size={26} />
+              </div>
+              <h3>Ready to create?</h3>
+              <p>
+                Enter a prompt and click Generate to turn your idea into usable
+                UI code.
+              </p>
+            </div>
+          ) : activeTab === "preview" ? (
+            <div className="builder-preview-wrap">
+              <iframe
+                title="Generated output preview"
+                className="builder-preview-frame"
+                srcDoc={previewDoc}
+                sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
+              />
+            </div>
+          ) : (
+            <div className="builder-code-wrap">
+              <div className="builder-code-head">
+                <span>Generated Code</span>
+                <button
+                  onClick={handleCopyCode}
+                  className={`builder-copy-btn ${copied ? "copied" : ""}`.trim()}
+                >
+                  <Copy size={12} />
+                  {copied ? "Copied" : "Copy Code"}
+                </button>
+              </div>
+              <pre className="builder-code-block">
+                <code>{generatedCode}</code>
+              </pre>
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
