@@ -22,27 +22,31 @@ export default function Builder() {
     setGeneratedCode("");
 
     try {
-      // Placeholder API call - hook up to your backend later
-      // const res = await fetch("/api/generate", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ prompt }),
-      // });
-      // const data = await res.json();
-      // setGeneratedCode(data.code);
+      const token = localStorage.getItem("token");
+      console.log("🔑 Token:", token ? "Present" : "Missing");
+      console.log("📤 Sending prompt to backend:", prompt);
 
-      // For now, simulate a response
-      setTimeout(() => {
-        setGeneratedCode(`<div style="padding: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; text-align: center; font-family: 'Inter', sans-serif; min-height: 400px; display: flex; align-items: center; justify-content: center;">
-  <div>
-    <h1 style="margin: 0; font-size: 48px; font-weight: 700; margin-bottom: 16px;">✨ AI Generated</h1>
-    <p style="margin: 0; font-size: 18px; opacity: 0.9;">Your prompt: "${prompt}"</p>
-    <p style="margin-top: 20px; font-size: 14px; opacity: 0.7;">Backend integration coming soon!</p>
-  </div>
-</div>`);
-        setLoading(false);
-      }, 1500);
+      const res = await fetch("http://localhost:5000/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      console.log("📥 Response status:", res.status);
+      const data = await res.json();
+      console.log("📥 Response data:", data);
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to generate code");
+      }
+
+      setGeneratedCode(data.code);
+      setLoading(false);
     } catch (err) {
+      console.error("❌ Error:", err);
       setError(err.message || "Failed to generate. Try again.");
       setLoading(false);
     }
