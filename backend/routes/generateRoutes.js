@@ -22,6 +22,24 @@ const isRetryableGeminiError = (error) => {
   );
 };
 
+const isQuotaExceededGeminiError = (error) => {
+  const message = String(error?.message || "").toUpperCase();
+  return (
+    message.includes("429") ||
+    message.includes("TOO MANY REQUESTS") ||
+    message.includes("QUOTA EXCEEDED") ||
+    message.includes("RESOURCE_EXHAUSTED")
+  );
+};
+
+const extractRetryAfterSeconds = (error) => {
+  const message = String(error?.message || "");
+  const match = message.match(/retry in\s+([\d.]+)s/i);
+  if (!match) return null;
+  const seconds = Number.parseFloat(match[1]);
+  return Number.isFinite(seconds) ? Math.ceil(seconds) : null;
+};
+
 const extractGeneratedCode = (result) => {
   const parts = result?.response?.candidates?.[0]?.content?.parts || [];
   const fromParts = parts
@@ -71,6 +89,14 @@ const generateWithRetryAndFallback = async (systemPrompt, userPrompt) => {
       } catch (error) {
         lastError = error;
         const retryable = isRetryableGeminiError(error);
+        const quotaExceeded = isQuotaExceededGeminiError(error);
+
+        if (quotaExceeded) {
+          console.warn(
+            `⚠️ Model ${modelName} quota exceeded. Trying next model if available.`,
+          );
+          break;
+        }
 
         if (!retryable) {
           throw error;
@@ -190,16 +216,18 @@ Requirements:
         .json({ message: "Invalid Gemini API key. Check .env file." });
     }
 
-    if (error.message.includes("RESOURCE_EXHAUSTED")) {
-      return res
-        .status(429)
-        .json({ message: "API quota exceeded. Try again later." });
+    if (isQuotaExceededGeminiError(error)) {
+      const retryAfterSeconds = extractRetryAfterSeconds(error);
+      return res.status(429).json({
+        message:
+          "Free AI quota expired for now. Please try again later. If Spark helped you, consider sponsoring the developer.",
+        ...(retryAfterSeconds ? { retryAfterSeconds } : {}),
+      });
     }
 
     if (isRetryableGeminiError(error)) {
       return res.status(503).json({
-        message:
-          "AI model is temporarily busy. Please retry in a few seconds.",
+        message: "AI model is temporarily busy. Please retry in a few seconds.",
       });
     }
 

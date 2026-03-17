@@ -83,13 +83,17 @@ export default function Builder() {
       );
       setLoading(false);
     } catch (err) {
-      setError(err.message || "Failed to generate. Try again.");
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to generate. Try again.";
+      setError(errorMessage);
       setChatMessages((previous) =>
         previous.map((message) =>
           message.id === pendingId
             ? {
                 ...message,
-                text: err.message || "Generation failed. Please try again.",
+                text: errorMessage,
               }
             : message,
         ),
