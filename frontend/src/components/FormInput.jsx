@@ -74,7 +74,7 @@ export default function FormInput({
           }}
         />
       </div>
-      {strength && (
+      {strength > 0 && (
         <div style={{ marginTop: 8 }}>
           <div
             style={{

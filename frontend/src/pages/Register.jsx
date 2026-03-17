@@ -89,15 +89,22 @@ export default function Register() {
         }}
       >
         {/* Logo */}
-        <img
-          src="/logo.jpeg"
-          alt="Spark Agency Logo"
+        <div
           style={{
-            height: 90,
-            objectFit: "contain",
-            marginBottom: 20,
+            display: "flex",
+            justifyContent: "center",
+            marginBottom: 40,
           }}
-        />
+        >
+          <img
+            src="/logo.jpeg"
+            alt="Spark Agency Logo"
+            style={{
+              height: 150,
+              objectFit: "contain",
+            }}
+          />
+        </div>
 
         {/* Content */}
         <div
@@ -162,7 +169,7 @@ export default function Register() {
 
         {/* Footer */}
         <div style={{ fontSize: 13, color: "#64748b" }}>
-          © 2024 Spark. All rights reserved.
+          © 2026 Spark. All rights reserved.
         </div>
       </div>
 
