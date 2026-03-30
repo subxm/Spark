@@ -49,7 +49,7 @@ export default function Login() {
       setTimeout(() => {
         login(res.data.user, res.data.token);
         navigate("/builder");
-      }, 800);
+      }, 150);
     } catch (err) {
       setError(err.response?.data?.message || "Login failed. Try again.");
       setLoading(false);

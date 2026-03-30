@@ -53,7 +53,7 @@ export default function Register() {
       setTimeout(() => {
         login(res.data.user, res.data.token);
         navigate("/builder");
-      }, 800);
+      }, 150);
     } catch (err) {
       setError(
         err.response?.data?.message || "Registration failed. Try again.",
