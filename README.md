@@ -1,130 +1,372 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/subxm/Spark/main/frontend/public/favicon.svg" alt="Spark Logo" width="100" />
+```text
+                                    ███████╗██████╗  █████╗ ██████╗ ██╗  ██╗
+                                    ██╔════╝██╔══██╗██╔══██╗██╔══██╗██║ ██╔╝
+                                    ███████╗██████╔╝███████║██████╔╝█████╔╝
+                                    ╚════██║██╔═══╝ ██╔══██║██╔══██╗██╔═██╗
+                                    ███████║██║     ██║  ██║██║  ██║██║  ██╗
+                                    ╚══════╝╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝
+```
 
-# Spark v2.0
+# Spark
 
-**Build apps at the speed of thought.**
+**AI-powered UI Builder for rapid prompt-to-interface generation**
 
-[![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?style=for-the-badge&logo=vercel)](https://spark-nine-beta.vercel.app/)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
-[![Gemini](https://img.shields.io/badge/Google_Gemini-2.0_Flash-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
+Generate polished interfaces from natural language, preview instantly, and refine through a chat-style workflow.
 
-[Live Demo](https://spark-nine-beta.vercel.app/) � [Report Bug](#) � [Request Feature](#)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vite.dev)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org)
+
+[Features](#-features) · [Tech Stack](#-tech-stack) · [Getting Started](#-getting-started) · [Project Structure](#-project-structure) · [API Reference](#-api-reference) · [Environment Variables](#-environment-variables)
 
 </div>
 
 ---
 
-## ? Overview
+## ✨ Features
 
-Spark is a next-generation AI-powered UI builder designed to bridge the gap between imagination and production-ready code. By leveraging Google's **Gemini 2.0 Flash** model, Spark transforms natural language prompts into highly polished, fully functioning React interfaces within seconds.
+- **Prompt-to-Code Generation** - Send natural language prompts and get full HTML documents with structured CSS and optional JS.
+- **Chat-Style Iteration** - Refine output with follow-up prompts in a conversational builder panel.
+- **Live Preview + Code View** - Switch between rendered output and source code instantly.
+- **Library Sidebar** - Accessible drawer to scroll through and instantly load your saved generation history.
+- **Resizable Workspace** - Drag-adjustable split layout between prompt/chat and output pane.
+- **Copy-Ready Output** - One-click code copy for quick export and reuse.
+- **Secure JWT Auth** - Register/login flow with protected generation routes.
+- **Persistent Generation Records** - Generated outputs are stored securely in PostgreSQL per user.
+- **Polished Landing + Auth UX** - Marketing landing, themed login/register pages, and protected route gating.
 
-Instead of fighting with boilerplate, setting up Tailwind configs, and wrestling with initial component structures, simply describe what you need. Spark will write, render, and execute the interface right before your eyes. 
+---
 
-### Key Capabilities
-- **?? Prompt-to-UI**: Generate entire layout structures, CSS scopes, and web components conversationally.
-- **?? Iterative Memory context**: A persistent chat thread that "remembers" your previous generations so you can ask to "Make the nav bar darker" without losing the rest of the page.
-- **?? Fluid Viewports**: Instantly preview how your generated UI responds across Desktop, Tablet, and Mobile viewports.
-- **? Version Control**: Effortlessly jump backward and forward through your generation history using visual Undo/Redo tools.
-- **?? Project Library**: Save your favorite generated assets to your personal history sandbox so you can load them back up days later.
-- **?? Clean Export**: Download your creations as raw HTML/CSS/JS or seamlessly copy the syntax-highlighted code.
-
-<br />
-
-## ?? Architecture & Tech Stack
-
-Spark is split into two highly optimized repositories running concurrently.
+## 🛠 Tech Stack
 
 ### Frontend
-- **Framework:** React 19 + Vite
-- **Routing:** React Router v7
-- **Styling:** Custom Scoped CSS + Utility classes (No heavy UI libraries)
-- **Highlighters:** PrismJS with custom dark-monokai theme overrides
-- **Deployment:** Vercel (Edge Network)
+
+| Technology       | Purpose                                         |
+| ---------------- | ----------------------------------------------- |
+| React 19 + Vite  | SPA framework and build tooling                 |
+| React Router DOM | Client-side routing and protected navigation    |
+| Axios            | API client with auth token interceptor          |
+| Lucide React     | UI icons                                        |
+| Custom CSS       | Branded UI for landing/auth/builder experiences |
 
 ### Backend
-- **Framework:** Node.js + Express
-- **Database:** PostgreSQL (Aiven / Neon)
-- **AI Integration:** @google/generative-ai (Gemini 2.0 Flash)
-- **Authentication:** JWT (JSON Web Tokens) with locally persistent secure storage
-- **Deployment:** Render (Web Service)
 
-<br />
+| Technology               | Purpose                                      |
+| ------------------------ | -------------------------------------------- |
+| Node.js + Express        | REST API server                              |
+| PostgreSQL (`pg`)        | User and generation persistence              |
+| JSON Web Tokens          | Stateless auth for protected routes          |
+| bcryptjs                 | Password hashing                             |
+| Google Generative AI SDK | Gemini-powered UI code generation            |
+| CORS + dotenv            | Environment configuration and origin control |
 
-## ?? Getting Started
+### External Services
 
-To run Spark locally on your own machine, follow these steps.
+| Service                                                          | Purpose                             | Notes                                         |
+| ---------------------------------------------------------------- | ----------------------------------- | --------------------------------------------- |
+| [Google AI Studio / Gemini](https://aistudio.google.com)         | Model inference for code generation | Requires `GEMINI_API_KEY`                     |
+| [Supabase Postgres](https://supabase.com) or any PostgreSQL host | Production database                 | SSL config is already enabled in backend pool |
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js version 18.0 or higher
-- PostgreSQL instance running locally or hosted remotely
-- A Google API Key for Gemini Access
 
-### 1. Clone the repository
-\\\ash
+Make sure you have:
+
+- **Node.js** v18 or higher
+- **PostgreSQL** (local or hosted)
+- **Git**
+- A valid **Gemini API key**
+
+### 1. Clone the Repository
+
+```bash
 git clone https://github.com/subxm/Spark.git
 cd Spark
-\\\
+```
 
-### 2. Backend Setup
-\\\ash
+### 2. Set Up the Database
+
+Run the SQL schema:
+
+```bash
+# Example with psql
+psql "your_postgres_connection_string" -f schema/schema.sql
+```
+
+This creates:
+
+- `users`
+- `generations`
+- `idx_generations_user`
+
+### 3. Configure the Backend
+
+```bash
 cd backend
 npm install
-\\\
-Create a \.env\ file in the ackend directory:
-\\\env
-PORT=5000
-DATABASE_URL=postgresql://user:password@localhost:5432/spark_db
-JWT_SECRET=your_super_secret_jwt_key_here
-GEMINI_API_KEY=your_google_gemini_api_key
-\\\
-Initialize the database using the provided schema:
-\\\ash
-psql -U your_user -d spark_db -f ../schema/schema.sql
-\\\
-Start the server:
-\\\ash
-npm run dev
-\\\
+```
 
-### 3. Frontend Setup
-Open a new terminal window:
-\\\ash
+Create `backend/.env`:
+
+```env
+PORT=5000
+FRONTEND_URL=http://localhost:5173
+DATABASE_URL=postgresql://username:password@host:5432/database
+JWT_SECRET=your_jwt_secret
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+Run backend:
+
+```bash
+npm run dev
+# or
+npm start
+```
+
+### 4. Configure the Frontend
+
+Open a second terminal:
+
+```bash
 cd frontend
 npm install
-\\\
-Create a \.env\ file in the rontend directory:
-\\\env
+```
+
+Create `frontend/.env` (optional but recommended):
+
+```env
 VITE_API_URL=http://localhost:5000
-\\\
-Start the Vite development server:
-\\\ash
+```
+
+Run frontend:
+
+```bash
 npm run dev
-\\\
+```
 
-<br />
+Visit: **http://localhost:5173**
 
-## ?? API Reference
+---
 
-If you are expanding the backend, here are the core exposed endpoints:
+## 📁 Project Structure
 
-#### Authentication
-- \POST /api/auth/register\ - Create a new user account.
-- \POST /api/auth/login\ - Authenticate and receive a JWT.
+```text
+Spark/
+│
+├── backend/                       # Express API server
+│   ├── config/
+│   │   └── db.js                  # PostgreSQL pool (SSL enabled)
+│   ├── controllers/
+│   │   └── authController.js      # Register and login handlers
+│   ├── middleware/
+│   │   └── authMiddleware.js      # JWT verification middleware
+│   ├── routes/
+│   │   ├── authRoutes.js          # /api/auth/*
+│   │   ├── generateRoutes.js      # /api/generate
+│   │   └── historyRoutes.js       # /api/history
+│   ├── package.json
+│   └── server.js                  # App entry point + route mounting
+│
+├── frontend/                      # React client app
+│   ├── src/
+│   │   ├── components/
+│   │   │   └── FormInput.jsx
+│   │   ├── context/
+│   │   │   └── AuthContext.jsx    # Auth state + token persistence
+│   │   ├── pages/
+│   │   │   ├── Landing.jsx
+│   │   │   ├── Login.jsx
+│   │   │   ├── Register.jsx
+│   │   │   └── Builder.jsx        # Prompt/chat + preview workspace
+│   │   ├── services/
+│   │   │   └── api.js             # Axios instance + API helpers
+│   │   ├── App.jsx                # Routes + ProtectedRoute
+│   │   └── main.jsx
+│   ├── package.json
+│   └── vercel.json                # Vercel SPA routing
+│
+├── schema/
+│   └── schema.sql                 # PostgreSQL schema
+└── README.md
+```
 
-#### Generation
-- \POST /api/generate\ - Sends the prompt to Gemini and streams back the generated UI code.
+---
 
-#### Workspace Library
-- \GET /api/history\ - Fetch all saved user generations.
-- \DELETE /api/history/:id\ - Delete a specific project.
-- \PATCH /api/history/:id/favourite\ - Toggle the favourite state of a generation.
+## 🗄 Database Schema
+
+```text
+users (1) ----------- (N) generations
+```
+
+| Table         | Description                                                            |
+| ------------- | ---------------------------------------------------------------------- |
+| `users`       | Stores account identity, email, hashed password, timestamps            |
+| `generations` | Stores prompt, generated code, favorite state, owner, and created date |
+
+Key details:
+
+- `generations.user_id` is a foreign key to `users.id` with `ON DELETE CASCADE`
+- `is_favourite` defaults to `false`
+- `idx_generations_user` accelerates per-user history lookups
+
+---
+
+## 📡 API Reference
+
+Base URL: `http://localhost:5000`
+
+### Auth
+
+| Method | Endpoint             | Description                      | Auth |
+| ------ | -------------------- | -------------------------------- | ---- |
+| `POST` | `/api/auth/register` | Create a new user and return JWT | ❌   |
+| `POST` | `/api/auth/login`    | Login and return JWT             | ❌   |
+
+### Generation
+
+| Method | Endpoint        | Description                                     | Auth |
+| ------ | --------------- | ----------------------------------------------- | ---- |
+| `POST` | `/api/generate` | Generate UI code from prompt and persist result | ✅   |
+
+### History
+
+| Method   | Endpoint                     | Description                                           | Auth |
+| -------- | ---------------------------- | ----------------------------------------------------- | ---- |
+| `GET`    | `/api/history`               | Fetch all past generations for the authenticated user | ✅   |
+| `DELETE` | `/api/history/:id`           | Delete a specific logged generation                   | ✅   |
+| `PATCH`  | `/api/history/:id/favourite` | Toggle favorite state for a generation                | ✅   |
+
+### Health
+
+| Method | Endpoint | Description       |
+| ------ | -------- | ----------------- |
+| `GET`  | `/`      | API running check |
+
+---
+
+## 🔐 Authentication Flow
+
+1. User registers or logs in through `/api/auth/*`.
+2. Backend returns a JWT (24h expiry).
+3. Frontend stores token in localStorage.
+4. Axios interceptor attaches `Authorization: Bearer <token>` to API calls.
+5. Protected routes validate token through middleware.
+
+---
+
+## 🧭 User Flow
+
+1. Open landing page.
+2. Sign up or log in.
+3. Enter a UI prompt in Builder.
+4. Backend calls Gemini and returns generated document code.
+5. Preview inside iframe or inspect raw code tab.
+6. Open Library sidebar to browse or load past iterations.
+7. Continue refining through chat-style iterations.
+
+---
+
+## 🔒 Environment Variables
+
+### `backend/.env`
+
+| Variable         | Required | Description                     |
+| ---------------- | -------- | ------------------------------- |
+| `PORT`           | ❌       | Server port (default: `5000`)   |
+| `FRONTEND_URL`   | ✅       | Frontend origin allowed by CORS |
+| `DATABASE_URL`   | ✅       | PostgreSQL connection string    |
+| `JWT_SECRET`     | ✅       | Secret used to sign/verify JWT  |
+| `GEMINI_API_KEY` | ✅       | API key for Gemini model access |
+
+### `frontend/.env`
+
+| Variable       | Required | Description                                         |
+| -------------- | -------- | --------------------------------------------------- |
+| `VITE_API_URL` | ❌       | Backend base URL (default: `http://localhost:5000`) |
+
+---
+
+## 🧪 Scripts
+
+### Backend (`backend/package.json`)
+
+| Script  | Command             | Purpose                        |
+| ------- | ------------------- | ------------------------------ |
+| `start` | `node server.js`    | Run backend in production mode |
+| `dev`   | `nodemon server.js` | Run backend with auto-reload   |
+
+### Frontend (`frontend/package.json`)
+
+| Script    | Command        | Purpose                          |
+| --------- | -------------- | -------------------------------- |
+| `dev`     | `vite`         | Start development server         |
+| `build`   | `vite build`   | Create production build          |
+| `preview` | `vite preview` | Preview production build locally |
+| `lint`    | `eslint .`     | Lint frontend source             |
+
+---
+
+## 🚢 Deployment
+
+### Suggested Stack
+
+| Layer    | Service                  |
+| -------- | ------------------------ |
+| Frontend | Vercel / Netlify         |
+| Backend  | Railway / Render         |
+| Database | Supabase Postgres / Neon |
+
+### Deploy Checklist
+
+1. Deploy backend first and configure all backend env vars.
+2. Set `FRONTEND_URL` to your deployed frontend domain.
+3. Deploy frontend and set `VITE_API_URL` to backend public URL. _(Note: `vercel.json` already includes the SPA rewrite logic)._
+4. Verify auth + generation end-to-end with production URLs.
+
+---
+
+## 🛣 Roadmap
+
+- [x] Prompt-based UI generation with live preview
+- [x] Chat-style iterative builder UX
+- [x] Full history retrieval API + frontend history page
+- [x] Favorite toggling and deletion endpoints
+- [ ] Better multi-turn context memory between prompts
+- [ ] One-click deploy/export flows
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome.
+
+```bash
+git checkout -b feature/your-feature
+git commit -m "feat: add your feature"
+git push origin feature/your-feature
+```
+
+Open a Pull Request and include a clear description with screenshots for UI updates.
+
+---
+
+## 📄 License
+
+No license file has been added yet. Add a `LICENSE` file before open-source distribution.
 
 ---
 
 <div align="center">
-  <p>Code is optional. Ideas aren't.</p>
+
+Built by [subxm](https://github.com/subxm)
+
+If Spark helped you, consider starring the repo.
+
 </div>
