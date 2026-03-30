@@ -16,8 +16,18 @@ import {
   ChevronLeft,
   ChevronRight,
   History,
+  Library,
+  Trash2,
+  Heart,
+  X,
+  Play,
 } from "lucide-react";
-import { generateCode as generateCodeRequest } from "../services/api";
+import {
+  generateCode as generateCodeRequest,
+  getHistory,
+  deleteHistory,
+  toggleFavourite,
+} from "../services/api";
 import Prism from "prismjs";
 import "prismjs/themes/prism-tomorrow.css"; // We will override the background in CSS for our custom dark theme
 import "./Builder.css";
@@ -46,6 +56,74 @@ export default function Builder() {
   const shellRef = useRef(null);
   const chatScrollRef = useRef(null);
   const textareaRef = useRef(null);
+
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historyData, setHistoryData] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const fetchHistory = async () => {
+    try {
+      setHistoryLoading(true);
+      const res = await getHistory();
+      // Ensure we get an array, fallback if backend returns unexpected object
+      setHistoryData(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Failed to fetch history", err);
+      setHistoryData([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isHistoryOpen) {
+      fetchHistory();
+    }
+  }, [isHistoryOpen]);
+
+  const handleToggleFavourite = async (item, e) => {
+    e.stopPropagation();
+    try {
+      await toggleFavourite(item.id);
+      setHistoryData((prev) =>
+        prev.map((h) =>
+          h.id === item.id ? { ...h, is_favourite: !h.is_favourite } : h,
+        ),
+      );
+    } catch (err) {
+      console.error("Failed to toggle favourite", err);
+    }
+  };
+
+  const handleDeleteHistory = async (item, e) => {
+    e.stopPropagation();
+    try {
+      if (!confirm("Delete this saved generation?")) return;
+      await deleteHistory(item.id);
+      setHistoryData((prev) => prev.filter((h) => h.id !== item.id));
+    } catch (err) {
+      console.error("Failed to delete history", err);
+    }
+  };
+
+  const handleLoadHistory = (item) => {
+    setChatMessages([
+      {
+        id: `loaded-${item.id}`,
+        role: "user",
+        text: item.prompt,
+      },
+      {
+        id: `loaded-res-${item.id}`,
+        role: "assistant",
+        text: "I've restored this previous generation for you.",
+      },
+    ]);
+    setCodeHistory([item.generated_code]);
+    setCurrentHistoryIndex(0);
+    setActiveTab("preview");
+    setIsHistoryOpen(false);
+  };
 
   const promptIdeas = [
     "A modern SaaS pricing page with annual toggle",
@@ -229,6 +307,80 @@ export default function Builder() {
 
   return (
     <div className="builder-page">
+      {/* History Sidebar */}
+      <div className={`history-sidebar ${isHistoryOpen ? "is-open" : ""}`}>
+        <div className="history-sidebar-head">
+          <div className="head-title">
+            <Library size={18} />
+            <h2>Library</h2>
+          </div>
+          <button className="icon-btn" onClick={() => setIsHistoryOpen(false)}>
+            <X size={18} />
+          </button>
+        </div>
+        <div className="history-sidebar-content">
+          {historyLoading ? (
+            <div className="history-loading">
+              <span className="spinner"></span>
+            </div>
+          ) : !Array.isArray(historyData) || historyData.length === 0 ? (
+            <div className="history-empty">
+              <History size={32} />
+              <p>No saved projects yet.</p>
+              <span>Generations will appear here.</span>
+            </div>
+          ) : (
+            <div className="history-grid">
+              {historyData.map((item) => (
+                <div
+                  key={item.id}
+                  className="history-card"
+                  onClick={() => handleLoadHistory(item)}
+                >
+                  <div className="history-card-head">
+                    <span className="history-date">
+                      {new Date(item.created_at).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                    <div className="history-actions">
+                      <button
+                        className={`action-btn ${item.is_favourite ? "active" : ""}`}
+                        onClick={(e) => handleToggleFavourite(item, e)}
+                        title="Toggle Favourite"
+                      >
+                        <Heart
+                          size={14}
+                          className={item.is_favourite ? "filled" : ""}
+                        />
+                      </button>
+                      <button
+                        className="action-btn delete-btn"
+                        onClick={(e) => handleDeleteHistory(item, e)}
+                        title="Delete"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                  <p className="history-prompt">{item.prompt}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Overlay to close sidebar on click */}
+      {isHistoryOpen && (
+        <div
+          className="history-overlay"
+          onClick={() => setIsHistoryOpen(false)}
+        ></div>
+      )}
+
       <div
         className="builder-shell"
         ref={shellRef}
@@ -240,10 +392,22 @@ export default function Builder() {
               <h1>Spark Builder</h1>
               <p>Welcome, {user?.name || "Builder"}</p>
             </div>
-            <button className="builder-logout" onClick={logout}>
-              <LogOut size={14} />
-              Logout
-            </button>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                className="builder-header-btn"
+                onClick={() => setIsHistoryOpen(true)}
+                title="Projects Library"
+              >
+                <Library size={16} />
+              </button>
+              <button
+                className="builder-header-btn logout-btn"
+                onClick={logout}
+                title="Logout"
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
           </div>
 
           <div className="builder-upper-area">
