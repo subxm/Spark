@@ -155,11 +155,99 @@ function Reveal({ as: Tag = "div", className = "", children, ...props }) {
   return (
     <Tag
       ref={elementRef}
-      className={`${className} reveal ${isVisible ? "is-visible" : ""}`.trim()}
+      className={`reveal ${isVisible ? "is-visible" : ""} ${className}`.trim()}
       {...props}
     >
       {children}
     </Tag>
+  );
+}
+
+function HeroConsole() {
+  const [hasTyped, setHasTyped] = useState(false);
+  const [typedText, setTypedText] = useState("");
+  const fullText =
+    "Build me a beautiful SaaS dashboard with a dark mode sidebar, revenue charts, and a user activity table.";
+
+  useEffect(() => {
+    let currentText = "";
+    let currentIndex = 0;
+
+    const timeout = setTimeout(() => {
+      const typeInterval = setInterval(() => {
+        if (currentIndex < fullText.length) {
+          currentText += fullText[currentIndex];
+          setTypedText(currentText);
+          currentIndex++;
+        } else {
+          clearInterval(typeInterval);
+          setTimeout(() => setHasTyped(true), 800);
+        }
+      }, 45);
+      return () => clearInterval(typeInterval);
+    }, 1000);
+
+    return () => clearTimeout(timeout);
+  }, []);
+
+  return (
+    <div className="hero-console animated-console">
+      <div className="console-head">
+        <div className="console-dots">
+          <span className="dot red"></span>
+          <span className="dot yellow"></span>
+          <span className="dot green"></span>
+        </div>
+        <span>spark-builder-v2</span>
+        <div className="console-spacer"></div>
+      </div>
+
+      {!hasTyped ? (
+        <div className="console-body">
+          <div className="prompt-container">
+            <Sparkles size={16} className="prompt-icon" />
+            <p className="prompt-typing">
+              {typedText}
+              <span className="cursor">|</span>
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="console-body is-generating">
+          <div className="prompt-container static">
+            <Sparkles size={16} className="prompt-icon" />
+            <p className="prompt-typing">{fullText}</p>
+          </div>
+
+          <div className="console-progress-group">
+            <div className="progress-line fade-in-1">
+              <span className="check">✓</span> Analyzing layout structure...
+            </div>
+            <div className="progress-line fade-in-2">
+              <span className="check">✓</span> Assembling Tailwind components...
+            </div>
+            <div className="progress-line fade-in-3">
+              <span className="spinner"></span> Generating code...
+            </div>
+          </div>
+
+          <div className="console-preview-reveal">
+            <div className="mock-ui">
+              <div className="mock-sidebar"></div>
+              <div className="mock-main">
+                <div className="mock-header"></div>
+                <div className="mock-cards">
+                  <div className="mock-card card-1"></div>
+                  <div className="mock-card card-2"></div>
+                  <div className="mock-card card-3"></div>
+                </div>
+                <div className="mock-chart"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -176,7 +264,8 @@ export default function Landing() {
   }, []);
 
   const handleGetStarted = () => {
-    navigate(token ? "/builder" : "/register");
+    const isAuthenticated = token && token !== "undefined" && token !== "null";
+    navigate(isAuthenticated ? "/builder" : "/register");
   };
 
   const handleScrollTo = (id) => {
@@ -214,43 +303,27 @@ export default function Landing() {
       <main id="top">
         <section className="hero section">
           <Reveal as="div" className="hero-copy">
-            <h1>
-              Code is optional.
-              <br />
-              Ideas aren't.
-            </h1>
+            <h1>Code is optional. Ideas aren't.</h1>
             <p>
-              Spark transforms your ideas into fully functional apps, websites,
-              and tools. Just describe what you want, and watch AI build it in
-              seconds.
+              Transform your ideas into fully functional web applications. Just
+              describe what you want, and watch Spark build clean,
+              production-ready code in seconds.
             </p>
             <div className="hero-actions">
-              <button className="btn btn-dark" onClick={handleGetStarted}>
+              <button
+                className="btn btn-dark btn-lg"
+                onClick={handleGetStarted}
+              >
                 Start Building Free <ArrowRight size={18} />
               </button>
             </div>
+            <small>
+              No credit card required. Generate your first UI in seconds.
+            </small>
           </Reveal>
 
-          <Reveal as="div" className="hero-console">
-            <div className="console-head">
-              <span>spark-builder</span>
-            </div>
-            <div className="console-body">
-              <p className="prompt">
-                Build me a SaaS dashboard with user analytics, revenue charts,
-                and sidebar navigation.
-              </p>
-              <div className="progress-line">
-                <span /> Layout structure generated
-              </div>
-              <div className="progress-line">
-                <span /> Components built
-              </div>
-              <div className="progress-line">
-                <span /> Charts and data visualized
-              </div>
-              <div className="console-status">Deploying to preview...</div>
-            </div>
+          <Reveal as="div">
+            <HeroConsole />
           </Reveal>
         </section>
 

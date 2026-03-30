@@ -9,8 +9,17 @@ import {
   Mic,
   MessageSquare,
   ArrowUp,
+  Monitor,
+  Tablet,
+  Smartphone,
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  History,
 } from "lucide-react";
 import { generateCode as generateCodeRequest } from "../services/api";
+import Prism from "prismjs";
+import "prismjs/themes/prism-tomorrow.css"; // We will override the background in CSS for our custom dark theme
 import "./Builder.css";
 
 export default function Builder() {
@@ -23,15 +32,20 @@ export default function Builder() {
       text: "Describe what you want to build, then keep refining with follow-up prompts.",
     },
   ]);
-  const [generatedCode, setGeneratedCode] = useState("");
+  const [codeHistory, setCodeHistory] = useState([]);
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
+  const generatedCode = codeHistory[currentHistoryIndex] || "";
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("preview");
+  const [viewport, setViewport] = useState("desktop");
   const [copied, setCopied] = useState(false);
   const [leftPaneWidth, setLeftPaneWidth] = useState(36);
   const [isResizing, setIsResizing] = useState(false);
   const shellRef = useRef(null);
   const chatScrollRef = useRef(null);
+  const textareaRef = useRef(null);
 
   const promptIdeas = [
     "A modern SaaS pricing page with annual toggle",
@@ -61,16 +75,23 @@ export default function Builder() {
       },
     ]);
     setPrompt("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
 
     setLoading(true);
     setError("");
-    setGeneratedCode("");
 
     try {
       const res = await generateCodeRequest(trimmedPrompt);
       const data = res.data;
 
-      setGeneratedCode(data.code);
+      setCodeHistory((prev) => [
+        ...prev.slice(0, currentHistoryIndex + 1),
+        data.code,
+      ]);
+      setCurrentHistoryIndex((prev) => prev + 1);
+
       setChatMessages((previous) =>
         previous.map((message) =>
           message.id === pendingId
@@ -108,9 +129,23 @@ export default function Builder() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDownloadCode = () => {
+    const blob = new Blob([generatedCode], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "spark-ui.html";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleClear = () => {
     setPrompt("");
-    setGeneratedCode("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+    setCodeHistory([]);
+    setCurrentHistoryIndex(-1);
     setError("");
     setActiveTab("preview");
     setChatMessages((previous) => [
@@ -121,6 +156,14 @@ export default function Builder() {
         text: "Cleared current output. Prompt again to generate a fresh version.",
       },
     ]);
+  };
+
+  const handlePromptChange = (e) => {
+    setPrompt(e.target.value);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, parseInt(getComputedStyle(textareaRef.current).maxHeight)) || textareaRef.current.scrollHeight}px`;
+    }
   };
 
   const handlePromptKeyDown = (event) => {
@@ -165,6 +208,12 @@ export default function Builder() {
     if (!chatScrollRef.current) return;
     chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
   }, [chatMessages]);
+
+  useEffect(() => {
+    if (activeTab === "code") {
+      Prism.highlightAll();
+    }
+  }, [generatedCode, activeTab]);
 
   const previewDoc = (() => {
     if (!generatedCode) return "";
@@ -234,8 +283,9 @@ export default function Builder() {
 
             <div className="builder-compose">
               <textarea
+                ref={textareaRef}
                 value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
+                onChange={handlePromptChange}
                 onKeyDown={handlePromptKeyDown}
                 placeholder="Ask Spark to create a web app that..."
                 className="builder-compose-input"
@@ -306,25 +356,83 @@ export default function Builder() {
           </div>
 
           {generatedCode && (
-            <div className="builder-tabs">
-              <button
-                className={`builder-tab ${activeTab === "preview" ? "active" : ""}`.trim()}
-                onClick={() => setActiveTab("preview")}
-              >
-                <Eye size={14} />
-                Preview
-              </button>
-              <button
-                className={`builder-tab ${activeTab === "code" ? "active" : ""}`.trim()}
-                onClick={() => setActiveTab("code")}
-              >
-                <Code2 size={14} />
-                Code
-              </button>
+            <div className="builder-workspace-header">
+              <div className="builder-tabs">
+                <button
+                  className={`builder-tab ${activeTab === "preview" ? "active" : ""}`.trim()}
+                  onClick={() => setActiveTab("preview")}
+                >
+                  <Eye size={14} />
+                  Preview
+                </button>
+                <button
+                  className={`builder-tab ${activeTab === "code" ? "active" : ""}`.trim()}
+                  onClick={() => setActiveTab("code")}
+                >
+                  <Code2 size={14} />
+                  Code
+                </button>
+              </div>
+
+              {codeHistory.length > 1 && (
+                <div className="builder-version-control">
+                  <button
+                    onClick={() =>
+                      setCurrentHistoryIndex((prev) => Math.max(0, prev - 1))
+                    }
+                    disabled={currentHistoryIndex === 0}
+                    className="version-btn"
+                    title="Previous Version"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span className="version-badge">
+                    <History size={12} />v{currentHistoryIndex + 1}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setCurrentHistoryIndex((prev) =>
+                        Math.min(codeHistory.length - 1, prev + 1),
+                      )
+                    }
+                    disabled={currentHistoryIndex === codeHistory.length - 1}
+                    className="version-btn"
+                    title="Next Version"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              )}
+
+              {activeTab === "preview" && (
+                <div className="builder-viewport-toggles">
+                  <button
+                    className={`viewport-btn ${viewport === "desktop" ? "active" : ""}`}
+                    onClick={() => setViewport("desktop")}
+                    title="Desktop view"
+                  >
+                    <Monitor size={14} />
+                  </button>
+                  <button
+                    className={`viewport-btn ${viewport === "tablet" ? "active" : ""}`}
+                    onClick={() => setViewport("tablet")}
+                    title="Tablet view"
+                  >
+                    <Tablet size={14} />
+                  </button>
+                  <button
+                    className={`viewport-btn ${viewport === "mobile" ? "active" : ""}`}
+                    onClick={() => setViewport("mobile")}
+                    title="Mobile view"
+                  >
+                    <Smartphone size={14} />
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
-          {!generatedCode ? (
+          {!generatedCode && !loading ? (
             <div className="builder-empty-state">
               <div className="builder-empty-icon">
                 <Sparkles size={26} />
@@ -335,29 +443,63 @@ export default function Builder() {
                 UI code.
               </p>
             </div>
+          ) : !generatedCode && loading ? (
+            <div className="builder-preview-wrap is-generating builder-first-gen">
+              <div className="builder-preview-overlay">
+                <div className="builder-shimmer"></div>
+              </div>
+              <div className="builder-generating-first-msg">
+                <Sparkles size={28} className="builder-pulse-icon" />
+                <h3>Crafting UI</h3>
+                <p>Give Spark a few moments to assemble your code...</p>
+              </div>
+            </div>
           ) : activeTab === "preview" ? (
-            <div className="builder-preview-wrap">
+            <div
+              className={`builder-preview-wrap viewport-${viewport} ${loading ? "is-generating" : ""}`.trim()}
+            >
               <iframe
                 title="Generated output preview"
                 className="builder-preview-frame"
                 srcDoc={previewDoc}
                 sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
               />
+              {loading && (
+                <div className="builder-preview-overlay">
+                  <div className="builder-shimmer"></div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="builder-code-wrap">
               <div className="builder-code-head">
                 <span>Generated Code</span>
-                <button
-                  onClick={handleCopyCode}
-                  className={`builder-copy-btn ${copied ? "copied" : ""}`.trim()}
-                >
-                  <Copy size={12} />
-                  {copied ? "Copied" : "Copy Code"}
-                </button>
+                <div className="builder-code-actions">
+                  <button
+                    onClick={handleCopyCode}
+                    className={`builder-copy-btn ${copied ? "copied" : ""}`.trim()}
+                  >
+                    <Copy size={12} />
+                    {copied ? "Copied" : "Copy"}
+                  </button>
+                  <button
+                    onClick={handleDownloadCode}
+                    className="builder-copy-btn"
+                  >
+                    <Download size={12} />
+                    Download
+                  </button>
+                </div>
               </div>
-              <pre className="builder-code-block">
-                <code>{generatedCode}</code>
+              <pre
+                className={`builder-code-block ${loading ? "is-generating" : ""}`.trim()}
+              >
+                <code className="language-html">{generatedCode}</code>
+                {loading && (
+                  <div className="builder-preview-overlay">
+                    <div className="builder-shimmer-dark"></div>
+                  </div>
+                )}
               </pre>
             </div>
           )}
