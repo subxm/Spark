@@ -112,7 +112,7 @@ export default function Register() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="auth-form">
+          <form onSubmit={handleSubmit} className={`auth-form ${loading ? "is-submitting" : ""} ${success ? "is-success" : ""}`}>
             <FormInput
               label="Full Name"
               name="name"
@@ -122,6 +122,7 @@ export default function Register() {
               onChange={handleChange}
               error={errors.name}
               icon={User}
+              disabled={loading}
             />
 
             <FormInput
@@ -133,6 +134,7 @@ export default function Register() {
               onChange={handleChange}
               error={errors.email}
               icon={Mail}
+              disabled={loading}
             />
 
             <FormInput
@@ -145,6 +147,7 @@ export default function Register() {
               error={errors.password}
               icon={Lock}
               strength={passwordStrength}
+              disabled={loading}
             />
 
             <BtnSubmit
@@ -170,7 +173,7 @@ function BtnSubmit({ loading, success, label, loadingLabel, successLabel }) {
     <button
       type="submit"
       disabled={loading || success}
-      className={`auth-submit-btn ${success ? "is-success" : ""}`.trim()}
+      className={`auth-submit-btn ${loading ? "is-loading" : ""} ${success ? "is-success" : ""}`.trim()}
     >
       {loading ? (
         <>

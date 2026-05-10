@@ -31,6 +31,17 @@
   transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
 }
 
+.fi-input:disabled {
+  animation: input-shimmer 1.5s infinite;
+  background: linear-gradient(90deg, #f5f0e6 25%, #faf6ed 50%, #f5f0e6 75%);
+  background-size: 200% 100%;
+}
+
+@keyframes input-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 .fi-input::placeholder {
   color: #8e8477;
   opacity: 1;

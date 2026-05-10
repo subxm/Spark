@@ -12,6 +12,7 @@ export default function FormInput({
   error,
   icon: Icon,
   strength,
+  disabled,
 }) {
   const [focused, setFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -37,6 +38,7 @@ export default function FormInput({
           onChange={onChange}
           placeholder={placeholder}
           required
+          disabled={disabled}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           className={`fi-input ${Icon ? "with-icon" : ""} ${isPasswordField ? "with-toggle" : ""}`.trim()}

@@ -106,7 +106,7 @@ export default function Login() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="auth-form">
+          <form onSubmit={handleSubmit} className={`auth-form ${loading ? "is-submitting" : ""} ${success ? "is-success" : ""}`}>
             <FormInput
               label="Email"
               name="email"
@@ -116,6 +116,7 @@ export default function Login() {
               onChange={handleChange}
               error={errors.email}
               icon={Mail}
+              disabled={loading}
             />
 
             <FormInput
@@ -127,6 +128,7 @@ export default function Login() {
               onChange={handleChange}
               error={errors.password}
               icon={Lock}
+              disabled={loading}
             />
 
             <BtnSubmit
@@ -153,7 +155,7 @@ function BtnSubmit({ loading, success, label, loadingLabel, successLabel }) {
     <button
       type="submit"
       disabled={loading || success}
-      className={`auth-submit-btn ${success ? "is-success" : ""}`.trim()}
+      className={`auth-submit-btn ${loading ? "is-loading" : ""} ${success ? "is-success" : ""}`.trim()}
     >
       {loading ? (
         <>
