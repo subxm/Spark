@@ -21,6 +21,15 @@ import {
   Trash2,
   Heart,
   X,
+  Github,
+  Image,
+  Figma,
+  FileCode,
+  Code,
+  FileText,
+  Share2,
+  Plus,
+  PanelRightOpen,
 } from "lucide-react";
 import {
   generateCode as generateCodeRequest,
@@ -63,6 +72,8 @@ export default function Builder() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [historyData, setHistoryData] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [projectName, setProjectName] = useState("Untitled Project");
+  const [activeCodeTab, setActiveCodeTab] = useState("html");
 
   const fetchHistory = async () => {
     try {
@@ -209,6 +220,53 @@ export default function Builder() {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportHTML = () => {
+    const blob = new Blob([generatedCode], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${projectName.replace(/\s+/g, '-').toLowerCase()}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportCodeSandbox = () => {
+    const sandboxCode = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${projectName}</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+${generatedCode}
+  </script>
+</body>
+</html>`;
+    const blob = new Blob([sandboxCode], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "codesandbox.html";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleShareProject = async () => {
+    const shareUrl = `${window.location.origin}/builder?project=${encodeURIComponent(projectName)}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      alert("Share link copied to clipboard!");
+    } catch {
+      prompt("Copy this link to share your project:", shareUrl);
+    }
+  };
+
   const handleClear = () => {
     setPrompt("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
@@ -217,6 +275,7 @@ export default function Builder() {
     setError("");
     setActiveTab("preview");
     setIsActive(false);
+    setProjectName("Untitled Project");
     setChatMessages([
       {
         id: "assistant-welcome",
@@ -224,6 +283,12 @@ export default function Builder() {
         text: "Describe what you want to build, and I'll generate the UI code for you.",
       },
     ]);
+  };
+
+  const handleNewProject = () => {
+    if (confirm("Start a new project? Current work will be lost.")) {
+      handleClear();
+    }
   };
 
   const handlePromptChange = (e) => {
@@ -323,6 +388,68 @@ export default function Builder() {
 
   return (
     <div className="builder-page">
+      {/* Top Navbar */}
+      <motion.nav
+        className="builder-topnav"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="topnav-left">
+          <div className="topnav-logo">
+            <Sparkles size={18} />
+            <span>Spark</span>
+          </div>
+        </div>
+        <div className="topnav-center">
+          <input
+            type="text"
+            className="topnav-project-name"
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+            placeholder="Project name..."
+          />
+        </div>
+        <div className="topnav-right">
+          <motion.button
+            className="topnav-btn"
+            onClick={handleNewProject}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Plus size={15} /> New
+          </motion.button>
+          {generatedCode && (
+            <>
+              <motion.button
+                className="topnav-btn"
+                onClick={handleExportHTML}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Download size={15} /> Export
+              </motion.button>
+              <motion.button
+                className="topnav-btn"
+                onClick={handleShareProject}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Share2 size={15} /> Share
+              </motion.button>
+            </>
+          )}
+          <motion.button
+            className="topnav-btn icon-only"
+            onClick={() => setIsHistoryOpen(true)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <PanelRightOpen size={16} />
+          </motion.button>
+        </div>
+      </motion.nav>
+
       {/* History Sidebar */}
       <AnimatePresence>
         {isHistoryOpen && (
@@ -428,13 +555,13 @@ export default function Builder() {
                 className="center-chat-title"
                 variants={itemVariants}
               >
-                What do you want to build?
+                What will you build today?
               </motion.h1>
               <motion.p
                 className="center-chat-subtitle"
                 variants={itemVariants}
               >
-                Describe your idea in plain words. I'll turn it into a beautiful, working UI.
+                Create stunning UIs and websites by chatting with AI.
               </motion.p>
             </motion.div>
 
@@ -496,6 +623,40 @@ export default function Builder() {
                     {idea}
                   </motion.button>
                 ))}
+              </motion.div>
+
+              <motion.div className="center-chat-divider" variants={itemVariants}>
+                <span>or import from</span>
+              </motion.div>
+
+              <motion.div
+                className="center-chat-imports"
+                variants={itemVariants}
+              >
+                <motion.button
+                  className="import-btn"
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Figma size={18} />
+                  <span>Figma</span>
+                </motion.button>
+                <motion.button
+                  className="import-btn"
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Image size={18} />
+                  <span>Image</span>
+                </motion.button>
+                <motion.button
+                  className="import-btn"
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Github size={18} />
+                  <span>GitHub</span>
+                </motion.button>
               </motion.div>
             </motion.div>
           </motion.div>
@@ -690,11 +851,27 @@ export default function Builder() {
                       </motion.button>
                       <motion.button
                         className="builder-right-head-btn"
-                        onClick={handleDownloadCode}
+                        onClick={handleExportHTML}
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
                       >
-                        <Download size={14} /> Download
+                        <Download size={14} /> HTML
+                      </motion.button>
+                      <motion.button
+                        className="builder-right-head-btn"
+                        onClick={() => alert("React export coming soon!")}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                      >
+                        <Code size={14} /> React
+                      </motion.button>
+                      <motion.button
+                        className="builder-right-head-btn"
+                        onClick={handleExportCodeSandbox}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                      >
+                        <FileCode size={14} /> CodeSandbox
                       </motion.button>
                     </>
                   )}
@@ -724,6 +901,14 @@ export default function Builder() {
                       whileTap={{ scale: 0.98 }}
                     >
                       <Code2 size={14} /> Code
+                    </motion.button>
+                    <motion.button
+                      className={`builder-tab ${activeTab === "console" ? "active" : ""}`}
+                      onClick={() => setActiveTab("console")}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <FileText size={14} /> Console
                     </motion.button>
                   </div>
 
@@ -837,9 +1022,70 @@ export default function Builder() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                 >
+                  <div className="code-tabs-container">
+                    <div className="code-tabs">
+                      <button
+                        className={`code-tab ${activeCodeTab === "html" ? "active" : ""}`}
+                        onClick={() => setActiveCodeTab("html")}
+                      >
+                        <FileCode size={14} /> HTML
+                      </button>
+                      <button
+                        className={`code-tab ${activeCodeTab === "css" ? "active" : ""}`}
+                        onClick={() => setActiveCodeTab("css")}
+                      >
+                        <Code size={14} /> CSS
+                      </button>
+                      <button
+                        className={`code-tab ${activeCodeTab === "js" ? "active" : ""}`}
+                        onClick={() => setActiveCodeTab("js")}
+                      >
+                        <FileText size={14} /> JS
+                      </button>
+                      <button
+                        className={`code-tab ${activeCodeTab === "react" ? "active" : ""}`}
+                        onClick={() => setActiveCodeTab("react")}
+                      >
+                        <Code size={14} /> React
+                      </button>
+                    </div>
+                    <div className="code-tab-actions">
+                      <button className="code-action-btn" onClick={handleCopyCode}>
+                        <Copy size={14} /> {copied ? "Copied!" : "Copy"}
+                      </button>
+                    </div>
+                  </div>
                   <pre className={`builder-code-block ${loading ? "is-generating" : ""}`}>
                     <code className="language-html">{generatedCode}</code>
                   </pre>
+                </motion.div>
+              )}
+
+              {generatedCode && activeTab === "console" && (
+                <motion.div
+                  className="builder-console-wrap"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <div className="console-header">
+                    <div className="console-title">
+                      <FileText size={14} /> Console
+                    </div>
+                  </div>
+                  <div className="console-output">
+                    <div className="console-line info">
+                      <span className="console-time">[{new Date().toLocaleTimeString()}]</span>
+                      <span>Application started successfully</span>
+                    </div>
+                    <div className="console-line info">
+                      <span className="console-time">[{new Date().toLocaleTimeString()}]</span>
+                      <span>UI components loaded: {chatMessages.length - 1} interactions</span>
+                    </div>
+                    <div className="console-line success">
+                      <span className="console-time">[{new Date().toLocaleTimeString()}]</span>
+                      <span>Ready for input</span>
+                    </div>
+                  </div>
                 </motion.div>
               )}
             </section>
