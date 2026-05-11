@@ -21,9 +21,6 @@ import {
   Trash2,
   Heart,
   X,
-  Github,
-  Image,
-  Figma,
   FileCode,
   Code,
   FileText,
@@ -623,40 +620,6 @@ ${generatedCode}
                     {idea}
                   </motion.button>
                 ))}
-              </motion.div>
-
-              <motion.div className="center-chat-divider" variants={itemVariants}>
-                <span>or import from</span>
-              </motion.div>
-
-              <motion.div
-                className="center-chat-imports"
-                variants={itemVariants}
-              >
-                <motion.button
-                  className="import-btn"
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Figma size={18} />
-                  <span>Figma</span>
-                </motion.button>
-                <motion.button
-                  className="import-btn"
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Image size={18} />
-                  <span>Image</span>
-                </motion.button>
-                <motion.button
-                  className="import-btn"
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Github size={18} />
-                  <span>GitHub</span>
-                </motion.button>
               </motion.div>
             </motion.div>
           </motion.div>
