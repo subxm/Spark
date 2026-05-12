@@ -4,6 +4,7 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Builder from "./pages/Builder";
+import Profile from "./pages/Profile";
 
 // Protected route — redirects to login if not authenticated
 const ProtectedRoute = ({ children }) => {
@@ -23,6 +24,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Builder />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
           </ProtectedRoute>
         }
       />

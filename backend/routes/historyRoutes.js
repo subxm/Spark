@@ -3,6 +3,37 @@ const router = express.Router();
 const pool = require("../config/db");
 const authMiddleware = require("../middleware/authMiddleware");
 
+// GET /api/history/stats - Fetch user generation stats
+router.get("/stats", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const [totalResult, favResult, recentResult] = await Promise.all([
+      pool.query(
+        "SELECT COUNT(*) as total FROM generations WHERE user_id = $1",
+        [userId],
+      ),
+      pool.query(
+        "SELECT COUNT(*) as favorites FROM generations WHERE user_id = $1 AND is_favourite = true",
+        [userId],
+      ),
+      pool.query(
+        "SELECT created_at FROM generations WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1",
+        [userId],
+      ),
+    ]);
+
+    res.status(200).json({
+      totalGenerations: parseInt(totalResult.rows[0].total, 10),
+      favorites: parseInt(favResult.rows[0].favorites, 10),
+      projects: parseInt(totalResult.rows[0].total, 10),
+      lastActivity: recentResult.rows[0]?.created_at || null,
+    });
+  } catch (error) {
+    console.error("Database error fetching stats:", error.message);
+    res.status(500).json({ message: "Failed to fetch stats" });
+  }
+});
+
 // GET /api/history - Fetch all generations for the logged-in user
 router.get("/", authMiddleware, async (req, res) => {
   try {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -27,6 +28,7 @@ import {
   Share2,
   Plus,
   PanelRightOpen,
+  User,
 } from "lucide-react";
 import {
   generateCode as generateCodeRequest,
@@ -39,6 +41,7 @@ import "prismjs/themes/prism-tomorrow.css";
 import "./Builder.css";
 
 export default function Builder() {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [prompt, setPrompt] = useState("");
   const [isActive, setIsActive] = useState(false);
@@ -443,6 +446,15 @@ ${generatedCode}
             whileTap={{ scale: 0.95 }}
           >
             <PanelRightOpen size={16} />
+          </motion.button>
+          <motion.button
+            className="topnav-btn icon-only"
+            onClick={() => navigate("/profile")}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            title="My Profile"
+          >
+            <User size={16} />
           </motion.button>
         </div>
       </motion.nav>

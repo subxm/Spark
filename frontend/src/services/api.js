@@ -20,3 +20,13 @@ export const getHistory = () => API.get("/api/history");
 export const deleteHistory = (id) => API.delete(`/api/history/${id}`);
 export const toggleFavourite = (id) =>
   API.patch(`/api/history/${id}/favourite`);
+
+// Profile & stats
+export const getProfileStats = () => API.get("/api/history/stats");
+export const getAllGenerations = () => API.get("/api/history");
+
+// Projects (uses same history data, grouped conceptually)
+export const getProjects = () => API.get("/api/history");
+export const renameProject = (id, title) =>
+  API.patch(`/api/history/${id}`, { title });
+export const duplicateProject = (id) => API.post(`/api/history/${id}/duplicate`);
