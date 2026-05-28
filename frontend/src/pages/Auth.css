@@ -369,6 +369,48 @@
   opacity: 0.85;
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1rem 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--line);
+}
+
+.auth-divider:not(:empty)::before {
+  margin-right: 0.85rem;
+}
+
+.auth-divider:not(:empty)::after {
+  margin-left: 0.85rem;
+}
+
+.google-btn-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  min-height: 40px;
+  margin-bottom: 0.5rem;
+}
+
+/* Force Google button to render rounded and fit shell */
+.google-btn-container > div {
+  width: 100% !important;
+  display: flex;
+  justify-content: center;
+}
+
 @keyframes auth-slide-down {
   from {
     opacity: 0;
@@ -472,4 +514,69 @@
 
 .dark .auth-highlight-mark {
   box-shadow: 0 0 12px rgba(216, 161, 65, 0.25);
+}
+
+.google-oauth-section {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.google-icon-only-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--white);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.google-icon-only-btn svg {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.google-icon-only-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: 0 8px 24px var(--accent-soft);
+  background: var(--paper-2);
+}
+
+.google-icon-only-btn:hover:not(:disabled) svg {
+  transform: scale(1.1);
+}
+
+.google-icon-only-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.95);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.google-icon-only-btn:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.google-icon-only-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Dark mode adjustments for Google Button */
+.dark .google-icon-only-btn {
+  background: var(--paper-2);
+  border-color: var(--line);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.dark .google-icon-only-btn:hover:not(:disabled) {
+  background: var(--paper);
+  border-color: var(--accent);
+  box-shadow: 0 8px 24px rgba(216, 161, 65, 0.18);
 }
