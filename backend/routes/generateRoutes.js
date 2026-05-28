@@ -7,7 +7,7 @@ require("dotenv").config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const PRIMARY_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-const FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-1.5-flash";
+const FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || "gemini-2.0-flash";
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -76,6 +76,7 @@ const generateWithRetryAndFallback = async (systemPrompt, userPrompt) => {
   }
 
   let lastError = null;
+  let firstQuotaError = null;
 
   for (const modelName of modelsToTry) {
     const maxAttempts = modelName === PRIMARY_MODEL ? 3 : 2;
@@ -95,6 +96,9 @@ const generateWithRetryAndFallback = async (systemPrompt, userPrompt) => {
           console.warn(
             `⚠️ Model ${modelName} quota exceeded. Trying next model if available.`,
           );
+          if (!firstQuotaError) {
+            firstQuotaError = error;
+          }
           break;
         }
 
@@ -116,7 +120,7 @@ const generateWithRetryAndFallback = async (systemPrompt, userPrompt) => {
     }
   }
 
-  throw lastError || new Error("Generation failed after retries and fallback.");
+  throw firstQuotaError || lastError || new Error("Generation failed after retries and fallback.");
 };
 
 // -------------------------------------------------------
