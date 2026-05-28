@@ -9,8 +9,11 @@ import {
   ShieldCheck,
   Sparkles,
   Users2,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import "./Landing.css";
 
 const features = [
@@ -128,7 +131,7 @@ function Reveal({ as: Tag = "div", className = "", children, ...props }) {
     if (!element || isVisible) return;
 
     if (!("IntersectionObserver" in window)) {
-      setIsVisible(true);
+      setTimeout(() => setIsVisible(true), 0);
       return;
     }
 
@@ -254,6 +257,7 @@ function HeroConsole() {
 export default function Landing() {
   const navigate = useNavigate();
   const { token } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [isScrolled, setIsScrolled] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
 
@@ -288,6 +292,13 @@ export default function Landing() {
           </div>
           <div className="nav-actions">
             <button
+              className="theme-toggle-btn"
+              onClick={toggleTheme}
+              title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button
               className="btn btn-ghost"
               onClick={() => navigate("/login")}
             >
@@ -303,11 +314,11 @@ export default function Landing() {
       <main id="top">
         <section className="hero section">
           <Reveal as="div" className="hero-copy">
-            <h1>Code is optional. Ideas aren't.</h1>
+            <h1>Code is optional.<br />Ideas aren't.</h1>
             <p>
-              Transform your ideas into fully functional web applications. Just
-              describe what you want, and watch Spark build clean,
-              production-ready code in seconds.
+              Describe the UI you want in plain English. Spark's AI generates
+              clean, responsive interfaces you can preview, iterate on, and
+              export — all from a single prompt.
             </p>
             <div className="hero-actions">
               <button
@@ -317,12 +328,9 @@ export default function Landing() {
                 Start Building Free <ArrowRight size={18} />
               </button>
             </div>
-            <small>
-              No credit card required. Generate your first UI in seconds.
-            </small>
           </Reveal>
 
-          <Reveal as="div">
+          <Reveal as="div" className="hero-image-wrap">
             <HeroConsole />
           </Reveal>
         </section>
@@ -330,10 +338,6 @@ export default function Landing() {
         <section id="features" className="section section-alt">
           <Reveal as="div" className="section-title">
             <h2>Everything you need to build faster</h2>
-            <p>
-              Powerful AI capabilities packed into a simple, intuitive
-              interface. No learning curve needed.
-            </p>
           </Reveal>
           <div className="feature-grid">
             {features.map((feature) => {
@@ -358,7 +362,6 @@ export default function Landing() {
         <section id="how" className="section">
           <Reveal as="div" className="section-title">
             <h2>Three steps to launch anything</h2>
-            <p>From idea to production in minutes, not months.</p>
           </Reveal>
           <div className="steps-grid">
             {steps.map((step, idx) => (
@@ -374,9 +377,6 @@ export default function Landing() {
         <section className="section section-alt">
           <Reveal as="div" className="section-title">
             <h2>Build anything you imagine</h2>
-            <p>
-              From quick prototypes to production apps, Spark handles it all.
-            </p>
           </Reveal>
           <div className="usecase-grid">
             {useCases.map((item) => (
@@ -459,8 +459,7 @@ export default function Landing() {
           <Reveal as="div" className="section-title">
             <h2>Start building with AI today</h2>
             <p>
-              Join 12,000+ builders who are shipping faster with Spark. No
-              credit card required. Start free and upgrade when you are ready.
+              Go from idea to interface in seconds — no setup, no config, no code required.
             </p>
           </Reveal>
           <button className="btn btn-accent" onClick={handleGetStarted}>
@@ -470,32 +469,8 @@ export default function Landing() {
       </main>
 
       <footer className="landing-footer">
-        <div className="footer-profile">
-          <h4>Built by Subham Singh Negi</h4>
-          <p>Connect with me</p>
-          <div className="footer-links">
-            <a
-              href="https://github.com/subxm/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              GitHub
-            </a>
-            <a
-              href="https://www.linkedin.com/in/subxm/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              LinkedIn
-            </a>
-            <a href="mailto:subhamsinghnegi03@gmail.com">Email</a>
-            <a href="https://www.subxm.me/" target="_blank" rel="noreferrer">
-              Portfolio
-            </a>
-          </div>
-        </div>
         <div className="footer-meta">
-          <p>© 2026 Subham Singh Negi. All rights reserved.</p>
+          <p>© 2026 Spark. All rights reserved.</p>
         </div>
       </footer>
     </div>

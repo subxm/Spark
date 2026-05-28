@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Copy,
@@ -9,8 +10,7 @@ import {
   Eye,
   Code2,
   MessageSquare,
-  Mic,
-  ArrowUp,
+  ArrowRight,
   Monitor,
   Tablet,
   Smartphone,
@@ -26,9 +26,10 @@ import {
   Code,
   FileText,
   Share2,
-  Plus,
   PanelRightOpen,
   User,
+  Sun,
+  Moon,
 } from "lucide-react";
 import {
   generateCode as generateCodeRequest,
@@ -40,11 +41,60 @@ import Prism from "prismjs";
 import "prismjs/themes/prism-tomorrow.css";
 import "./Builder.css";
 
+// Helper function to split HTML/CSS/JS/React code chunks
+const getSplitCode = (code, framework) => {
+  if (!code) return { html: "", css: "", js: "", react: "" };
+  
+  // Extract CSS
+  const cssMatch = code.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+  const css = cssMatch ? cssMatch[1].trim() : "";
+  
+  // Extract JS
+  const jsMatch = code.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
+  const js = jsMatch ? jsMatch[1].trim() : "";
+  
+  // Extract HTML body
+  const bodyMatch = code.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  let html = bodyMatch ? bodyMatch[1].trim() : code;
+  
+  // Strip style and script tags from HTML preview tab
+  html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+  html = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
+  html = html.trim();
+  
+  // Convert HTML class names to JSX syntax
+  let jsx = html.replace(/class=/g, 'className=');
+  jsx = jsx.replace(/onclick=/g, 'onClick=');
+  jsx = jsx.replace(/onchange=/g, 'onChange=');
+  jsx = jsx.replace(/for=/g, 'htmlFor=');
+  
+  const react = `import React from 'react';
+${framework === 'tailwind' ? '' : "import './style.css';"}
+
+export default function Component() {
+  ${js ? `React.useEffect(() => {
+    ${js.split('\n').map(line => '    ' + line).join('\n')}
+  }, []);` : ''}
+
+  return (
+    <div className="spark-wrapper">
+      ${jsx.split('\n').map(line => '      ' + line).join('\n')}
+    </div>
+  );
+}`;
+  
+  return { html, css, js, react };
+};
+
 export default function Builder() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  
   const [prompt, setPrompt] = useState("");
   const [isActive, setIsActive] = useState(false);
+  const framework = "css"; // 'css' or 'tailwind'
+  const [consoleLogs, setConsoleLogs] = useState([]);
 
   const [chatMessages, setChatMessages] = useState([
     {
@@ -64,6 +114,7 @@ export default function Builder() {
   const [copied, setCopied] = useState(false);
   const [leftPaneWidth, setLeftPaneWidth] = useState(38);
   const [isResizing, setIsResizing] = useState(false);
+  
   const shellRef = useRef(null);
   const chatScrollRef = useRef(null);
   const textareaRef = useRef(null);
@@ -74,6 +125,24 @@ export default function Builder() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [projectName, setProjectName] = useState("Untitled Project");
   const [activeCodeTab, setActiveCodeTab] = useState("html");
+
+  // Setup iframe console messages listener
+  useEffect(() => {
+    const handleIframeMessage = (event) => {
+      if (event.data && event.data.type === "IFRAME_CONSOLE_LOG") {
+        setConsoleLogs((prev) => [
+          ...prev,
+          {
+            type: event.data.logType,
+            message: event.data.message,
+            time: new Date().toLocaleTimeString(),
+          },
+        ]);
+      }
+    };
+    window.addEventListener("message", handleIframeMessage);
+    return () => window.removeEventListener("message", handleIframeMessage);
+  }, []);
 
   const fetchHistory = async () => {
     try {
@@ -124,13 +193,23 @@ export default function Builder() {
     setCodeHistory([item.generated_code]);
     setCurrentHistoryIndex(0);
     setActiveTab("preview");
+    setConsoleLogs([]);
     setIsHistoryOpen(false);
   };
 
   const promptIdeas = [
-    "A modern SaaS pricing page",
-    "A task dashboard with kanban",
-    "A portfolio with hero section",
+    {
+      label: "A modern SaaS pricing page",
+      full: "Create a modern SaaS pricing page with three tiers: Free, Pro, and Enterprise. Each tier should have a card with a title, price, feature list with checkmarks, and a call-to-action button. Use a clean layout with subtle gradients, hover effects on cards, and a highlighted 'Most Popular' badge on the Pro tier. Include a toggle to switch between monthly and annual billing."
+    },
+    {
+      label: "A task dashboard with kanban",
+      full: "Build a task management dashboard with a kanban board layout. Include three columns: To Do, In Progress, and Done. Each column should have draggable task cards showing a title, priority label (High/Medium/Low with color coding), assignee avatar, and due date. Add a top bar with a search input, filter dropdowns, and a 'New Task' button. Use a clean modern design with rounded corners and subtle shadows."
+    },
+    {
+      label: "A portfolio with hero section",
+      full: "Design a personal portfolio page with a full-width hero section featuring a large heading with the name, a short tagline, and a call-to-action button. Below the hero, include a grid of project cards with thumbnail images, project titles, short descriptions, and tech stack tags. Add a skills section with progress bars or icon badges, and a contact form at the bottom with name, email, and message fields. Use smooth scroll animations and a dark modern aesthetic."
+    },
   ];
 
   const handleGenerate = async (promptText = prompt) => {
@@ -154,6 +233,7 @@ export default function Builder() {
       { id: pendingId, role: "assistant", text: "Generating your UI..." },
     ]);
     setPrompt("");
+    setConsoleLogs([]); // Reset console logs for a new generation
 
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     if (centerTextareaRef.current) centerTextareaRef.current.style.height = "auto";
@@ -162,7 +242,8 @@ export default function Builder() {
     setError("");
 
     try {
-      const res = await generateCodeRequest(trimmedPrompt);
+      // Send the current code block context to backend if it exists
+      const res = await generateCodeRequest(trimmedPrompt, generatedCode || null, framework);
       const data = res.data;
 
       setCodeHistory((prev) => [
@@ -210,15 +291,7 @@ export default function Builder() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownloadCode = () => {
-    const blob = new Blob([generatedCode], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "spark-ui.html";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+
 
   const handleExportHTML = () => {
     const blob = new Blob([generatedCode], { type: "text/html" });
@@ -237,15 +310,9 @@ export default function Builder() {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${projectName}</title>
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="text/babel">
-${generatedCode}
-  </script>
+  ${generatedCode}
 </body>
 </html>`;
     const blob = new Blob([sandboxCode], { type: "text/html" });
@@ -275,6 +342,7 @@ ${generatedCode}
     setError("");
     setActiveTab("preview");
     setIsActive(false);
+    setConsoleLogs([]);
     setProjectName("Untitled Project");
     setChatMessages([
       {
@@ -285,11 +353,7 @@ ${generatedCode}
     ]);
   };
 
-  const handleNewProject = () => {
-    if (confirm("Start a new project? Current work will be lost.")) {
-      handleClear();
-    }
-  };
+
 
   const handlePromptChange = (e) => {
     setPrompt(e.target.value);
@@ -348,15 +412,76 @@ ${generatedCode}
 
   useEffect(() => {
     if (activeTab === "code") Prism.highlightAll();
-  }, [generatedCode, activeTab]);
+  }, [generatedCode, activeTab, activeCodeTab]);
+
+  // Console logging interceptor script injected into the iframe
+  const consoleInterceptor = `
+    <script>
+      (function() {
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        const sendLog = (type, args) => {
+          window.parent.postMessage({
+            type: 'IFRAME_CONSOLE_LOG',
+            logType: type,
+            message: Array.from(args).map(arg => {
+              if (typeof arg === 'object') {
+                try { return JSON.stringify(arg); } catch (e) { return String(arg); }
+              }
+              return String(arg);
+            }).join(' ')
+          }, '*');
+        };
+        
+        console.log = function() {
+          sendLog('log', arguments);
+          originalLog.apply(console, arguments);
+        };
+        console.error = function() {
+          sendLog('error', arguments);
+          originalError.apply(console, arguments);
+        };
+        console.warn = function() {
+          sendLog('warn', arguments);
+          originalWarn.apply(console, arguments);
+        };
+        
+        window.addEventListener('error', function(e) {
+          sendLog('error', [e.message + ' at ' + e.filename + ':' + e.lineno]);
+        });
+      })();
+    </script>
+  `;
 
   const previewDoc = (() => {
     if (!generatedCode) return "";
     const frameReset = "<style>html,body{margin:0 !important;padding:0 !important;min-height:100%;}body{box-sizing:border-box;}</style>";
+    const injectedScripts = frameReset + consoleInterceptor;
     if (/<head[\s>]/i.test(generatedCode)) {
-      return generatedCode.replace(/<head([^>]*)>/i, `<head$1>${frameReset}`);
+      return generatedCode.replace(/<head([^>]*)>/i, `<head$1>${injectedScripts}`);
     }
-    return `<!doctype html><html><head>${frameReset}</head><body>${generatedCode}</body></html>`;
+    return `<!doctype html><html><head>${injectedScripts}</head><body>${generatedCode}</body></html>`;
+  })();
+
+  // Code tab splitting
+  const splitCode = getSplitCode(generatedCode, framework);
+  
+  const codeToDisplay = (() => {
+    if (activeCodeTab === "html") return splitCode.html || generatedCode;
+    if (activeCodeTab === "css") return splitCode.css || "/* No custom CSS in this component */";
+    if (activeCodeTab === "js") return splitCode.js || "// No custom JavaScript in this component";
+    if (activeCodeTab === "react") return splitCode.react;
+    return generatedCode;
+  })();
+
+  const displayLanguage = (() => {
+    if (activeCodeTab === "html") return "html";
+    if (activeCodeTab === "css") return "css";
+    if (activeCodeTab === "js") return "javascript";
+    if (activeCodeTab === "react") return "jsx";
+    return "html";
   })();
 
   // Animation variants
@@ -396,7 +521,7 @@ ${generatedCode}
         transition={{ duration: 0.3 }}
       >
         <div className="topnav-left">
-          <div className="topnav-logo">
+          <div className="topnav-logo" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
             <Sparkles size={18} />
             <span>Spark</span>
           </div>
@@ -411,14 +536,6 @@ ${generatedCode}
           />
         </div>
         <div className="topnav-right">
-          <motion.button
-            className="topnav-btn"
-            onClick={handleNewProject}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Plus size={15} /> New
-          </motion.button>
           {generatedCode && (
             <>
               <motion.button
@@ -439,14 +556,17 @@ ${generatedCode}
               </motion.button>
             </>
           )}
+          
           <motion.button
             className="topnav-btn icon-only"
-            onClick={() => setIsHistoryOpen(true)}
+            onClick={toggleTheme}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            title="Toggle Theme"
           >
-            <PanelRightOpen size={16} />
+            {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
           </motion.button>
+
           <motion.button
             className="topnav-btn icon-only"
             onClick={() => navigate("/profile")}
@@ -555,29 +675,20 @@ ${generatedCode}
             <motion.div className="center-chat-header" variants={itemVariants}>
               <motion.div
                 className="center-chat-logo"
-                whileHover={{ scale: 1.05, boxShadow: "0 12px 32px rgba(20, 17, 13, 0.3)" }}
+                whileHover={{ scale: 1.05, boxShadow: "0 12px 32px var(--accent-soft)" }}
                 transition={{ duration: 0.2 }}
               >
                 <Sparkles size={28} />
               </motion.div>
-              <motion.h1
-                className="center-chat-title"
-                variants={itemVariants}
-              >
+              <motion.h1 className="center-chat-title" variants={itemVariants}>
                 What will you build today?
               </motion.h1>
-              <motion.p
-                className="center-chat-subtitle"
-                variants={itemVariants}
-              >
-                Create stunning UIs and websites by chatting with AI.
+              <motion.p className="center-chat-subtitle" variants={itemVariants}>
+                Create stunning UIs by chatting with AI.
               </motion.p>
             </motion.div>
 
-            <motion.div
-              className="center-chat-input-wrap"
-              variants={itemVariants}
-            >
+            <motion.div className="center-chat-input-wrap" variants={itemVariants}>
               <motion.div
                 className="center-chat-input-container"
                 whileFocus={{ scale: 1.01 }}
@@ -593,14 +704,6 @@ ${generatedCode}
                 />
                 <div className="center-chat-actions">
                   <div className="center-chat-tools">
-                    <motion.button
-                      className="center-chat-tool"
-                      title="Voice input"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Mic size={16} />
-                    </motion.button>
                   </div>
                   <motion.button
                     className="center-chat-send"
@@ -609,27 +712,24 @@ ${generatedCode}
                     whileHover={!loading && !prompt.trim() ? {} : { scale: 1.05 }}
                     whileTap={!loading && !prompt.trim() ? {} : { scale: 0.95 }}
                   >
-                    {loading ? <span className="center-chat-spinner" /> : <ArrowUp size={18} />}
+                    {loading ? <span className="center-chat-spinner" /> : <ArrowRight size={18} />}
                   </motion.button>
                 </div>
               </motion.div>
 
-              <motion.div
-                className="center-chat-ideas"
-                variants={itemVariants}
-              >
+              <motion.div className="center-chat-ideas" variants={itemVariants}>
                 {promptIdeas.map((idea, index) => (
                   <motion.button
-                    key={idea}
+                    key={idea.label}
                     className="center-chat-idea"
-                    onClick={() => setPrompt(idea)}
+                    onClick={() => setPrompt(idea.full)}
                     whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 + index * 0.1 }}
                   >
-                    {idea}
+                    {idea.label}
                   </motion.button>
                 ))}
               </motion.div>
@@ -657,15 +757,6 @@ ${generatedCode}
                   <p>Welcome, {user?.name || "Builder"}</p>
                 </div>
                 <div style={{ display: "flex", gap: "0.45rem" }}>
-                  <motion.button
-                    className="builder-header-btn"
-                    onClick={() => setIsHistoryOpen(true)}
-                    title="Projects Library"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Library size={16} />
-                  </motion.button>
                   <motion.button
                     className="builder-header-btn"
                     onClick={logout}
@@ -723,13 +814,13 @@ ${generatedCode}
                 >
                   {promptIdeas.map((idea) => (
                     <motion.button
-                      key={idea}
+                      key={idea.label}
                       className="builder-idea-chip"
-                      onClick={() => setPrompt(idea)}
+                      onClick={() => setPrompt(idea.full)}
                       whileHover={{ scale: 1.03, y: -1 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      {idea}
+                      {idea.label}
                     </motion.button>
                   ))}
                 </motion.div>
@@ -744,7 +835,7 @@ ${generatedCode}
                     value={prompt}
                     onChange={handlePromptChange}
                     onKeyDown={handlePromptKeyDown}
-                    placeholder="Ask Spark to create..."
+                    placeholder="Ask Spark to edit or create..."
                     className="builder-compose-input"
                   />
                   <div className="builder-compose-actions">
@@ -756,14 +847,6 @@ ${generatedCode}
                         whileTap={{ scale: 0.95 }}
                       >
                         <MessageSquare size={15} />
-                      </motion.button>
-                      <motion.button
-                        className="builder-tool-btn"
-                        aria-label="Voice"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <Mic size={15} />
                       </motion.button>
                     </div>
                     <div className="builder-compose-submit">
@@ -783,7 +866,7 @@ ${generatedCode}
                         whileHover={!loading ? { scale: 1.05 } : {}}
                         whileTap={!loading ? { scale: 0.95 } : {}}
                       >
-                        {loading ? <span className="builder-spinner" /> : <ArrowUp size={16} />}
+                        {loading ? <span className="builder-spinner" /> : <ArrowRight size={16} />}
                       </motion.button>
                     </div>
                   </div>
@@ -812,7 +895,7 @@ ${generatedCode}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 }}
               >
-                <h2>Preview</h2>
+                <h2>Preview & Workspace</h2>
                 <div className="builder-right-head-actions">
                   {generatedCode && (
                     <>
@@ -822,7 +905,7 @@ ${generatedCode}
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
                       >
-                        <Copy size={14} /> {copied ? "Copied" : "Copy"}
+                        <Copy size={14} /> {copied ? "Copied" : "Copy Full Code"}
                       </motion.button>
                       <motion.button
                         className="builder-right-head-btn"
@@ -834,19 +917,11 @@ ${generatedCode}
                       </motion.button>
                       <motion.button
                         className="builder-right-head-btn"
-                        onClick={() => alert("React export coming soon!")}
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
-                      >
-                        <Code size={14} /> React
-                      </motion.button>
-                      <motion.button
-                        className="builder-right-head-btn"
                         onClick={handleExportCodeSandbox}
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
                       >
-                        <FileCode size={14} /> CodeSandbox
+                        <FileCode size={14} /> React Wrapper
                       </motion.button>
                     </>
                   )}
@@ -1025,13 +1100,17 @@ ${generatedCode}
                       </button>
                     </div>
                     <div className="code-tab-actions">
-                      <button className="code-action-btn" onClick={handleCopyCode}>
-                        <Copy size={14} /> {copied ? "Copied!" : "Copy"}
+                      <button className="code-action-btn" onClick={() => {
+                        navigator.clipboard.writeText(codeToDisplay);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}>
+                        <Copy size={14} /> {copied ? "Copied!" : "Copy Section"}
                       </button>
                     </div>
                   </div>
                   <pre className={`builder-code-block ${loading ? "is-generating" : ""}`}>
-                    <code className="language-html">{generatedCode}</code>
+                    <code className={`language-${displayLanguage}`}>{codeToDisplay}</code>
                   </pre>
                 </motion.div>
               )}
@@ -1044,22 +1123,26 @@ ${generatedCode}
                 >
                   <div className="console-header">
                     <div className="console-title">
-                      <FileText size={14} /> Console
+                      <FileText size={14} /> Console Logs
                     </div>
+                    <button className="console-clear-btn" onClick={() => setConsoleLogs([])}>
+                      Clear
+                    </button>
                   </div>
                   <div className="console-output">
-                    <div className="console-line info">
-                      <span className="console-time">[{new Date().toLocaleTimeString()}]</span>
-                      <span>Application started successfully</span>
-                    </div>
-                    <div className="console-line info">
-                      <span className="console-time">[{new Date().toLocaleTimeString()}]</span>
-                      <span>UI components loaded: {chatMessages.length - 1} interactions</span>
-                    </div>
-                    <div className="console-line success">
-                      <span className="console-time">[{new Date().toLocaleTimeString()}]</span>
-                      <span>Ready for input</span>
-                    </div>
+                    {consoleLogs.length === 0 ? (
+                      <div className="console-empty">
+                        <span className="console-time">[{new Date().toLocaleTimeString()}]</span>
+                        <span className="console-msg-info">Console is clean. No errors or logs captured from the preview.</span>
+                      </div>
+                    ) : (
+                      consoleLogs.map((log, index) => (
+                        <div key={index} className={`console-line ${log.type}`}>
+                          <span className="console-time">[{log.time}]</span>
+                          <span className="console-msg">{log.message}</span>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -1067,6 +1150,20 @@ ${generatedCode}
           </>
         )}
       </motion.div>
+
+      {/* Floating Library Button - Bottom Left */}
+      <motion.button
+        className="builder-floating-library"
+        onClick={() => setIsHistoryOpen(true)}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        title="Projects Library"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <Library size={20} />
+      </motion.button>
     </div>
   );
 }

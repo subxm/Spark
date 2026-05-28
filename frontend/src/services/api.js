@@ -15,7 +15,8 @@ API.interceptors.request.use((config) => {
 
 export const registerUser = (data) => API.post("/api/auth/register", data);
 export const loginUser = (data) => API.post("/api/auth/login", data);
-export const generateCode = (prompt) => API.post("/api/generate", { prompt });
+export const generateCode = (prompt, currentCode, framework) =>
+  API.post("/api/generate", { prompt, currentCode, framework });
 export const getHistory = () => API.get("/api/history");
 export const deleteHistory = (id) => API.delete(`/api/history/${id}`);
 export const toggleFavourite = (id) =>

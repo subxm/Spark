@@ -124,7 +124,7 @@ const generateWithRetryAndFallback = async (systemPrompt, userPrompt) => {
 // POST /api/generate
 // -------------------------------------------------------
 router.post("/", authMiddleware, async (req, res) => {
-  const { prompt } = req.body;
+  const { prompt, currentCode, framework } = req.body;
   const userId = req.user.id;
 
   // Validation
@@ -134,22 +134,31 @@ router.post("/", authMiddleware, async (req, res) => {
 
   try {
     // Call Gemini API to generate code
-    console.log("🤖 Calling Gemini API with prompt:", prompt);
+    console.log("🤖 Calling Gemini API. Prompt:", prompt, "Editing existing:", !!currentCode, "Framework:", framework);
 
-    const systemPrompt = `You are an expert web developer. Create a well-structured HTML component based on the user's prompt.
+    let systemPrompt = `You are an expert web developer. Create a well-structured HTML component based on the user's prompt.`;
 
-IMPORTANT: Return the code in this EXACT structure:
+    if (framework === "tailwind") {
+      systemPrompt += `
+You MUST use Tailwind CSS for styling. Include the Tailwind CDN script:
+<script src="https://cdn.tailwindcss.com"></script>
+in the <head> section of the document. Do not write custom CSS in the <style> block; instead, use Tailwind CSS utility classes on all elements. Make sure the designs look beautiful, modern, and polished.`;
+    } else {
+      systemPrompt += `
+Organize all CSS inside the <style> section of the <head> (do NOT write extensive inline styles). Make the styles visually stunning, with modern professional color palettes, responsive layouts, and smooth hover animations.`;
+    }
+
+    systemPrompt += `
+IMPORTANT: Return the code in this EXACT structure (ensure it's a complete, valid HTML document):
 
 <html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Component</title>
+  ${framework === "tailwind" ? '<script src="https://cdn.tailwindcss.com"></script>' : ""}
   <style>
-    /* CSS organized by sections with comments */
-    /* =========================== */
-    /* Put your CSS here */
-    /* =========================== */
+    /* CSS organized by sections with comments (if not using Tailwind) */
   </style>
 </head>
 <body>
@@ -159,22 +168,37 @@ IMPORTANT: Return the code in this EXACT structure:
   </div>
   
   <script>
-    // Optional: Add minimal JavaScript if needed
+    // Optional: Add minimal JavaScript logic here if needed
   </script>
 </body>
 </html>
 
 Requirements:
 - Create a complete, valid HTML page
-- Organize CSS in the <style> section (NOT inline)
-- Use comments to separate sections (HTML, CSS)
-- Make it visually stunning with modern design
-- Use professional color palettes and layouts
-- Ensure responsive design
-- Return ONLY the HTML code, no markdown or explanations
-- No code blocks (triple backticks)`;
+- Make it visually stunning with modern premium aesthetics (vibrant accents, dark modes where appropriate, grid/flexbox layouts, card designs, hover effects).
+- Ensure responsive design (works on mobile, tablet, and desktop).
+- Return ONLY the HTML code, no markdown code blocks (no triple backticks), no surrounding explanations.
+- Ensure all resources/images are self-contained or use public placeholder images.`;
 
-    const userPrompt = `Create a ${prompt}`;
+    let userPrompt = "";
+    if (currentCode) {
+      systemPrompt += `
+
+You are updating an EXISTING component. Here is the current code of the component:
+\`\`\`html
+${currentCode}
+\`\`\`
+
+Modify the code according to the user's instructions: "${prompt}".
+IMPORTANT:
+- Keep the overall design, structure, styles, and scripts intact unless asked to modify them.
+- Apply the requested changes directly to the existing code.
+- Return the ENTIRE updated HTML page code (do NOT return just a snippet or diff, return the full complete file).`;
+
+      userPrompt = `Modify the existing component based on: ${prompt}`;
+    } else {
+      userPrompt = `Create a ${prompt}`;
+    }
 
     const generatedCode = await generateWithRetryAndFallback(
       systemPrompt,

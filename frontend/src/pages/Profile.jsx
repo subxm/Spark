@@ -29,6 +29,8 @@ import {
   ChevronDown,
   RefreshCw,
   FolderPlus,
+  Sun,
+  Moon,
 } from "lucide-react";
 import {
   getProfileStats,
@@ -37,6 +39,7 @@ import {
   toggleFavourite,
 } from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import "./Profile.css";
 
 // ─── Animation Variants ──────────────────────────────────────────────────────
@@ -182,7 +185,7 @@ function StatsCards({ stats, loading }) {
       initial="initial"
       animate="animate"
     >
-      {cards.map((card, i) => {
+      {cards.map((card) => {
         const Icon = card.icon;
         return (
           <motion.div
@@ -798,6 +801,7 @@ function ProfileHeader({ user }) {
 export default function Profile() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState("projects");
   const [viewMode, setViewMode] = useState("grid");
   const [stats, setStats] = useState(null);
@@ -919,6 +923,15 @@ export default function Profile() {
         </div>
         <div className="profile-nav-center" />
         <div className="profile-nav-right">
+          <motion.button
+            className="profile-nav-btn icon-only"
+            onClick={toggleTheme}
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            title="Toggle Theme"
+          >
+            {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+          </motion.button>
           <motion.button
             className="profile-nav-btn"
             onClick={() => navigate("/builder")}
