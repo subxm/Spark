@@ -110,7 +110,7 @@ export default function Builder() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("preview");
-  const [viewport, setViewport] = useState("desktop");
+  const viewport = "desktop";
   const [copied, setCopied] = useState(false);
   const [leftPaneWidth, setLeftPaneWidth] = useState(38);
   const [isResizing, setIsResizing] = useState(false);
@@ -303,36 +303,6 @@ export default function Builder() {
     URL.revokeObjectURL(url);
   };
 
-  const handleExportCodeSandbox = () => {
-    const sandboxCode = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${projectName}</title>
-</head>
-<body>
-  ${generatedCode}
-</body>
-</html>`;
-    const blob = new Blob([sandboxCode], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "codesandbox.html";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleShareProject = async () => {
-    const shareUrl = `${window.location.origin}/builder?project=${encodeURIComponent(projectName)}`;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      alert("Share link copied to clipboard!");
-    } catch {
-      prompt("Copy this link to share your project:", shareUrl);
-    }
-  };
 
   const handleClear = () => {
     setPrompt("");
@@ -537,24 +507,14 @@ export default function Builder() {
         </div>
         <div className="topnav-right">
           {generatedCode && (
-            <>
-              <motion.button
-                className="topnav-btn"
-                onClick={handleExportHTML}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Download size={15} /> Export
-              </motion.button>
-              <motion.button
-                className="topnav-btn"
-                onClick={handleShareProject}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Share2 size={15} /> Share
-              </motion.button>
-            </>
+            <motion.button
+              className="topnav-btn"
+              onClick={handleExportHTML}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Download size={15} /> Export
+            </motion.button>
           )}
           
           <motion.button
@@ -799,32 +759,6 @@ export default function Builder() {
 
               <div className="builder-bottom-area">
                 <motion.div
-                  className="builder-input-label"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  UI Prompt
-                </motion.div>
-                <motion.div
-                  className="builder-ideas"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.25 }}
-                >
-                  {promptIdeas.map((idea) => (
-                    <motion.button
-                      key={idea.label}
-                      className="builder-idea-chip"
-                      onClick={() => setPrompt(idea.full)}
-                      whileHover={{ scale: 1.03, y: -1 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      {idea.label}
-                    </motion.button>
-                  ))}
-                </motion.div>
-                <motion.div
                   className="builder-compose"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -913,15 +847,7 @@ export default function Builder() {
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
                       >
-                        <Download size={14} /> HTML
-                      </motion.button>
-                      <motion.button
-                        className="builder-right-head-btn"
-                        onClick={handleExportCodeSandbox}
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
-                      >
-                        <FileCode size={14} /> React Wrapper
+                        <Download size={14} /> Export
                       </motion.button>
                     </>
                   )}
@@ -982,34 +908,7 @@ export default function Builder() {
                     </div>
                   )}
 
-                  {activeTab === "preview" && (
-                    <div className="builder-viewport-toggles">
-                      <motion.button
-                        className={`viewport-btn ${viewport === "desktop" ? "active" : ""}`}
-                        onClick={() => setViewport("desktop")}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <Monitor size={14} />
-                      </motion.button>
-                      <motion.button
-                        className={`viewport-btn ${viewport === "tablet" ? "active" : ""}`}
-                        onClick={() => setViewport("tablet")}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <Tablet size={14} />
-                      </motion.button>
-                      <motion.button
-                        className={`viewport-btn ${viewport === "mobile" ? "active" : ""}`}
-                        onClick={() => setViewport("mobile")}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <Smartphone size={14} />
-                      </motion.button>
-                    </div>
-                  )}
+
                 </motion.div>
               )}
 
