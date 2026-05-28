@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import FormInput from "../components/FormInput";
-import { Mail, Lock, ArrowRight } from "lucide-react";
+import { Mail, Lock, ArrowRight, Check } from "lucide-react";
 import "./Auth.css";
 
 export default function Login() {
@@ -66,9 +66,6 @@ export default function Login() {
     <div className="auth-page">
       <div className="auth-shell">
         <aside className="auth-brand-panel">
-          <Link to="/" className="auth-logo-wrap">
-            <strong>Spark</strong>
-          </Link>
 
           <div className="auth-brand-content">
             <h1>Welcome back. Continue from where your ideas paused.</h1>
@@ -76,7 +73,9 @@ export default function Login() {
             <div className="auth-highlights">
               {highlights.map((item) => (
                 <div key={item} className="auth-highlight">
-                  <span className="auth-highlight-mark">+</span>
+                  <span className="auth-highlight-mark">
+                    <Check size={12} strokeWidth={3} />
+                  </span>
                   <span className="auth-highlight-text">{item}</span>
                 </div>
               ))}
@@ -96,7 +95,6 @@ export default function Login() {
 
           <div className="auth-headline">
             <h2>Sign in to Spark</h2>
-            <p>Access your builder workspace and generation history.</p>
           </div>
 
           {error && <div className="auth-alert error">{error}</div>}

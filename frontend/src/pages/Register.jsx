@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import FormInput, { getPasswordStrength } from "../components/FormInput";
-import { User, Mail, Lock, ArrowRight } from "lucide-react";
+import { User, Mail, Lock, ArrowRight, Check } from "lucide-react";
 import "./Auth.css";
 
 export default function Register() {
@@ -72,9 +72,6 @@ export default function Register() {
     <div className="auth-page">
       <div className="auth-shell">
         <aside className="auth-brand-panel">
-          <Link to="/" className="auth-logo-wrap">
-            <strong>Spark</strong>
-          </Link>
 
           <div className="auth-brand-content">
             <h1>Start your workspace. Build faster with less friction.</h1>
@@ -82,7 +79,9 @@ export default function Register() {
             <div className="auth-highlights">
               {highlights.map((item) => (
                 <div key={item} className="auth-highlight">
-                  <span className="auth-highlight-mark">+</span>
+                  <span className="auth-highlight-mark">
+                    <Check size={12} strokeWidth={3} />
+                  </span>
                   <span className="auth-highlight-text">{item}</span>
                 </div>
               ))}
@@ -102,7 +101,6 @@ export default function Register() {
 
           <div className="auth-headline">
             <h2>Create your account</h2>
-            <p>Start free and launch your first workflow in minutes.</p>
           </div>
 
           {error && <div className="auth-alert error">{error}</div>}

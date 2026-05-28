@@ -153,3 +153,41 @@
   align-items: center;
   gap: 0.25rem;
 }
+
+/* Dark Mode Overrides */
+.dark .fi-input {
+  background: #181410;
+  border-color: #352e25;
+  color: var(--ink);
+}
+
+.dark .fi-input:hover {
+  border-color: #4a4134;
+}
+
+.dark .fi-root.is-focused .fi-input {
+  background: #1f1a14;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.dark .fi-root.has-error .fi-input {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.dark .fi-strength-label.weak {
+  color: #fca5a5;
+}
+
+.dark .fi-strength-label.fair {
+  color: #fcd34d;
+}
+
+.dark .fi-strength-label.strong {
+  color: #86efac;
+}
+
+.dark .fi-error {
+  color: #fca5a5;
+}
