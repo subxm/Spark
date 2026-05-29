@@ -549,13 +549,19 @@ export default function Builder() {
           </motion.button>
 
           <motion.button
-            className="topnav-btn icon-only"
+            className="topnav-btn icon-only profile-avatar-nav-btn"
             onClick={() => navigate("/profile")}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             title="My Profile"
           >
-            <User size={16} />
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt="Profile" className="nav-avatar-img" />
+            ) : user?.name ? (
+              <span className="nav-avatar-initial">{user.name.charAt(0).toUpperCase()}</span>
+            ) : (
+              <User size={16} />
+            )}
           </motion.button>
         </div>
       </motion.nav>

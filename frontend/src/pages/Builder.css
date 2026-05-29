@@ -1535,3 +1535,33 @@
   color: #0c0a08;
   background: var(--builder-accent);
 }
+
+/* ── Profile Avatar Navigation Button ─────────────────────────── */
+.profile-avatar-nav-btn {
+  padding: 0 !important;
+  width: 28px;
+  height: 28px;
+  border-radius: 50% !important;
+  overflow: hidden;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--builder-border);
+}
+
+.profile-avatar-nav-btn:hover {
+  border-color: var(--builder-accent);
+}
+
+.nav-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nav-avatar-initial {
+  font-family: "Fraunces", serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--builder-accent);
+}
