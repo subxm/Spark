@@ -861,35 +861,136 @@
   border-color: rgba(255, 255, 255, 0.09);
 }
 
-.recent-thumb {
+.recent-thumb-icon {
   width: 44px;
   height: 44px;
   border-radius: 8px;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: #fff;
-  position: relative;
-}
-
-.recent-thumb-placeholder {
-  width: 100%;
-  height: 100%;
+  background: linear-gradient(135deg, rgba(216, 161, 65, 0.12) 0%, rgba(185, 134, 48, 0.04) 100%);
+  border: 1px solid rgba(216, 161, 65, 0.2);
+  color: #d8a141;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1a1612, #0f0d0a);
-  color: #6b5e4f;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
 }
 
-.recent-thumb .profile-card-preview {
+.profile-recent-item:hover .recent-thumb-icon {
+  border-color: rgba(216, 161, 65, 0.45);
+  background: linear-gradient(135deg, rgba(216, 161, 65, 0.2) 0%, rgba(185, 134, 48, 0.08) 100%);
+  color: #e5b560;
+  box-shadow: 0 0 12px rgba(216, 161, 65, 0.15);
+}
+
+.profile-gen-thumb-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(216, 161, 65, 0.12) 0%, rgba(185, 134, 48, 0.04) 100%);
+  border: 1px solid rgba(216, 161, 65, 0.2);
+  color: #d8a141;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.profile-gen-row:hover .profile-gen-thumb-icon-wrap {
+  border-color: rgba(216, 161, 65, 0.45);
+  background: linear-gradient(135deg, rgba(216, 161, 65, 0.2) 0%, rgba(185, 134, 48, 0.08) 100%);
+  color: #e5b560;
+  box-shadow: 0 0 12px rgba(216, 161, 65, 0.15);
+}
+
+/* ── Welcome Banner Card ───────────────────────────────────────── */
+.profile-welcome-card {
+  position: relative;
+  border-radius: 20px;
+  padding: 2.25rem;
+  overflow: hidden;
+  background: linear-gradient(145deg, #1b1712 0%, #0e0c09 100%);
+  border: 1px solid rgba(216, 161, 65, 0.25);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4),
+              inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  transition: all 0.3s ease;
+}
+
+.profile-welcome-glow {
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(216, 161, 65, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+  filter: blur(40px);
+  z-index: 1;
+}
+
+.profile-welcome-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
   width: 100%;
-  height: 100%;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem;
 }
 
-.recent-thumb .profile-preview-frame {
-  width: 300%;
-  height: 300%;
-  transform: scale(0.333);
+.profile-welcome-text {
+  flex: 1;
+  min-width: 280px;
+}
+
+.profile-welcome-text h3 {
+  font-family: "Fraunces", serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #f4ece0;
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.01em;
+}
+
+.profile-welcome-text p {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #a69885;
+  margin: 0;
+  max-width: 520px;
+}
+
+.profile-welcome-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(145deg, #d8a141, #b98630);
+  border: none;
+  border-radius: 12px;
+  color: #1a1612;
+  font-family: "Sora", sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(216, 161, 65, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.profile-welcome-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(216, 161, 65, 0.45);
+}
+
+.profile-welcome-cta:active {
+  transform: translateY(0);
 }
 
 .recent-info {

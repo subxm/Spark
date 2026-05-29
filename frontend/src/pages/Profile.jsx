@@ -31,6 +31,7 @@ import {
   FolderPlus,
   Sun,
   Moon,
+  Code2,
 } from "lucide-react";
 import {
   getProfileStats,
@@ -109,8 +110,8 @@ function GenerationSkeleton() {
 
 const TABS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
-  { id: "projects", label: "My Projects", icon: FolderOpen },
-  { id: "generations", label: "All Generations", icon: Zap },
+  { id: "projects", label: "Projects", icon: FolderOpen },
+  { id: "liked", label: "Liked", icon: Heart },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
@@ -403,14 +404,8 @@ function GenerationCard({ item, onLoad, onDelete, onFav, onExport }) {
       whileHover={{ x: 3, transition: { duration: 0.18 } }}
       layout
     >
-      <div className="profile-gen-thumb-wrap" onClick={() => onLoad(item)}>
-        {item.generated_code ? (
-          <MiniPreview code={item.generated_code} />
-        ) : (
-          <div className="profile-gen-thumb-placeholder">
-            <Sparkles size={14} />
-          </div>
-        )}
+      <div className="profile-gen-thumb-icon-wrap" onClick={() => onLoad(item)}>
+        <Code2 size={16} />
       </div>
 
       <div className="profile-gen-info" onClick={() => onLoad(item)}>
@@ -507,7 +502,9 @@ function EmptyState({ icon: Icon, title, description, action }) {
 
 // ─── Tab Panels ─────────────────────────────────────────────────────────────
 
-function OverviewTab({ stats, recentItems, onLoadItem }) {
+// ─── Tab Panels ─────────────────────────────────────────────────────────────
+
+function OverviewTab({ recentItems, onLoadItem, onNewProject }) {
   return (
     <motion.div
       className="profile-tab-panel"
@@ -516,14 +513,21 @@ function OverviewTab({ stats, recentItems, onLoadItem }) {
       initial="initial"
       animate="animate"
     >
-      <div className="profile-section-head">
-        <h2>
-          <BarChart3 size={18} /> Stats Overview
-        </h2>
+      <div className="profile-welcome-card">
+        <div className="profile-welcome-glow" />
+        <div className="profile-welcome-content">
+          <div className="profile-welcome-text">
+            <h3>Create stunning UIs with AI</h3>
+            <p>Build responsive components, dashboard layouts, landing pages, and interactive prototypes instantly with Gemini.</p>
+          </div>
+          <button className="profile-welcome-cta" onClick={onNewProject}>
+            <Sparkles size={14} />
+            <span>Start Building</span>
+          </button>
+        </div>
       </div>
-      <StatsCards stats={stats} loading={false} />
 
-      <div className="profile-section-head" style={{ marginTop: "2rem" }}>
+      <div className="profile-section-head" style={{ marginTop: "1rem" }}>
         <h2>
           <Clock size={18} /> Recent Activity
         </h2>
@@ -543,14 +547,8 @@ function OverviewTab({ stats, recentItems, onLoadItem }) {
               onClick={() => onLoadItem(item)}
               whileHover={{ x: 3 }}
             >
-              <div className="recent-thumb">
-                {item.generated_code ? (
-                  <MiniPreview code={item.generated_code} />
-                ) : (
-                  <div className="recent-thumb-placeholder">
-                    <Sparkles size={12} />
-                  </div>
-                )}
+              <div className="recent-thumb-icon">
+                <Code2 size={16} />
               </div>
               <div className="recent-info">
                 <p className="recent-prompt">{item.prompt}</p>
@@ -574,52 +572,6 @@ function OverviewTab({ stats, recentItems, onLoadItem }) {
   );
 }
 
-function ProjectsTab({
-  items,
-  loading,
-  onLoad,
-  onDelete,
-  onFav,
-  onRename,
-  onExport,
-  onNewProject,
-}) {
-  if (loading) {
-    return (
-      <div className="profile-grid">
-        {[0, 1, 2, 3, 4, 5].map((i) => <ProjectSkeleton key={i} />)}
-      </div>
-    );
-  }
-
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={FolderOpen}
-        title="No projects yet"
-        description="Your generated projects will appear here as cards. Start building!"
-        action={{ label: "Create New Project", icon: Plus, onClick: onNewProject }}
-      />
-    );
-  }
-
-  return (
-    <div className="profile-grid">
-      {items.map((item) => (
-        <ProjectCard
-          key={item.id}
-          item={item}
-          onLoad={onLoad}
-          onDelete={onDelete}
-          onFav={onFav}
-          onRename={onRename}
-          onExport={onExport}
-        />
-      ))}
-    </div>
-  );
-}
-
 function GenerationsTab({
   items,
   loading,
@@ -629,21 +581,33 @@ function GenerationsTab({
   onDelete,
   onFav,
   onExport,
+  isLikedOnly = false,
+  onNewProject,
+  onRename,
 }) {
   if (loading) {
     return (
-      <div className="profile-gen-list">
-        {[0, 1, 2, 3, 4].map((i) => <GenerationSkeleton key={i} />)}
+      <div className={viewMode === "grid" ? "profile-grid" : "profile-gen-list"}>
+        {[0, 1, 2, 3, 4, 5].map((i) =>
+          viewMode === "grid" ? <ProjectSkeleton key={i} /> : <GenerationSkeleton key={i} />
+        )}
       </div>
     );
   }
 
   if (items.length === 0) {
-    return (
+    return isLikedOnly ? (
       <EmptyState
-        icon={Zap}
-        title="No generations yet"
-        description="Your generation history will appear here. Start by building something!"
+        icon={Heart}
+        title="No liked projects yet"
+        description="Projects you favorite will appear here."
+      />
+    ) : (
+      <EmptyState
+        icon={FolderOpen}
+        title="No projects yet"
+        description="Your generated projects will appear here. Start building!"
+        action={{ label: "Create New Project", icon: Plus, onClick: onNewProject }}
       />
     );
   }
@@ -651,14 +615,14 @@ function GenerationsTab({
   return (
     <motion.div
       className="profile-tab-panel"
-      key="generations"
+      key={isLikedOnly ? "liked" : "projects"}
       variants={fadeUp}
       initial="initial"
       animate="animate"
     >
       <div className="profile-gen-header">
         <span className="profile-gen-count">
-          {items.length} generation{items.length !== 1 ? "s" : ""}
+          {items.length} {isLikedOnly ? "liked project" : "project"}{items.length !== 1 ? "s" : ""}
         </span>
         <div className="profile-view-toggle">
           <motion.button
@@ -689,7 +653,7 @@ function GenerationsTab({
               onLoad={onLoad}
               onDelete={onDelete}
               onFav={onFav}
-              onRename={() => {}}
+              onRename={onRename}
               onExport={onExport}
             />
           ) : (
@@ -802,7 +766,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState("projects");
+  const [activeTab, setActiveTab] = useState("overview");
   const [viewMode, setViewMode] = useState("grid");
   const [stats, setStats] = useState(null);
   const [generations, setGenerations] = useState([]);
@@ -917,7 +881,6 @@ export default function Profile() {
       >
         <div className="profile-nav-left">
           <div className="profile-nav-logo">
-            <Sparkles size={18} />
             <span>Spark</span>
           </div>
         </div>
@@ -968,17 +931,19 @@ export default function Profile() {
             {activeTab === "overview" && (
               <OverviewTab
                 key="overview"
-                stats={stats}
                 recentItems={recentItems}
                 onLoadItem={handleLoadItem}
+                onNewProject={handleNewProject}
               />
             )}
 
             {activeTab === "projects" && (
-              <ProjectsTab
+              <GenerationsTab
                 key="projects"
                 items={generations}
                 loading={loadingGen}
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
                 onLoad={handleLoadItem}
                 onDelete={handleDelete}
                 onFav={handleFav}
@@ -988,17 +953,20 @@ export default function Profile() {
               />
             )}
 
-            {activeTab === "generations" && (
+            {activeTab === "liked" && (
               <GenerationsTab
-                key="generations"
-                items={generations}
+                key="liked"
+                items={generations.filter((g) => g.is_favourite)}
                 loading={loadingGen}
                 viewMode={viewMode}
                 onViewModeChange={setViewMode}
                 onLoad={handleLoadItem}
                 onDelete={handleDelete}
                 onFav={handleFav}
+                onRename={handleRename}
                 onExport={handleExport}
+                isLikedOnly={true}
+                onNewProject={handleNewProject}
               />
             )}
 
