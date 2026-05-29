@@ -122,6 +122,7 @@ export default function Builder() {
   const chatScrollRef = useRef(null);
   const textareaRef = useRef(null);
   const centerTextareaRef = useRef(null);
+  const projectNameInputRef = useRef(null);
 
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [historyData, setHistoryData] = useState([]);
@@ -326,6 +327,13 @@ export default function Builder() {
     ]);
   };
 
+  const handleFocusProjectName = () => {
+    if (projectNameInputRef.current) {
+      projectNameInputRef.current.focus();
+      projectNameInputRef.current.select();
+    }
+  };
+
 
 
   const handlePromptChange = (e) => {
@@ -501,13 +509,21 @@ export default function Builder() {
         <div className="topnav-center">
           <div className="topnav-project-name-wrapper">
             <input
+              ref={projectNameInputRef}
               type="text"
               className="topnav-project-name"
               value={projectName}
               onChange={(e) => setProjectName(e.target.value)}
               placeholder="Project name..."
             />
-            <Pencil size={12} className="project-name-edit-icon" />
+            <button
+              type="button"
+              className="project-name-edit-btn"
+              onClick={handleFocusProjectName}
+              title="Rename Project"
+            >
+              <Pencil size={12} className="project-name-edit-icon" />
+            </button>
           </div>
         </div>
         <div className="topnav-right">
@@ -674,7 +690,13 @@ export default function Builder() {
             <motion.div className="center-chat-header" variants={itemVariants}>
               <motion.div
                 className="center-chat-logo"
-                whileHover={{ scale: 1.05, boxShadow: "0 12px 32px var(--accent-soft)" }}
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow: theme === "dark"
+                    ? "0 10px 30px rgba(0, 0, 0, 0.4), 0 0 45px rgba(216, 161, 65, 0.15)"
+                    : "0 10px 30px rgba(185, 134, 48, 0.12), 0 0 45px var(--accent-soft)",
+                  borderColor: "var(--builder-accent)"
+                }}
                 transition={{ duration: 0.2 }}
               >
                 <Wand2 size={28} />
@@ -683,7 +705,7 @@ export default function Builder() {
                 What will you build today?
               </motion.h1>
               <motion.p className="center-chat-subtitle" variants={itemVariants}>
-                Create stunning UIs by chatting with AI.
+                Create stunning UIs with AI.
               </motion.p>
             </motion.div>
 
