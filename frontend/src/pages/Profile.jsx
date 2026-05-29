@@ -38,6 +38,7 @@ import {
   getAllGenerations,
   deleteHistory,
   toggleFavourite,
+  updateProfile,
 } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -672,7 +673,83 @@ function GenerationsTab({
   );
 }
 
-function SettingsTab() {
+function SettingsTab({ user, updateUser }) {
+  const [username, setUsername] = useState(user?.name || "");
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || "");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState(null);
+
+  // Presets of beautiful avatars
+  const PRESET_AVATARS = [
+    "https://api.dicebear.com/7.x/pixel-art/svg?seed=Felix",
+    "https://api.dicebear.com/7.x/pixel-art/svg?seed=Aneka",
+    "https://api.dicebear.com/7.x/pixel-art/svg?seed=Jack",
+    "https://api.dicebear.com/7.x/pixel-art/svg?seed=Nala",
+    "https://api.dicebear.com/7.x/bottts/svg?seed=Sparky",
+    "https://api.dicebear.com/7.x/bottts/svg?seed=Robo",
+  ];
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      setMessage({ type: "error", text: "Image size must be under 2MB." });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarUrl(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setMessage(null);
+
+    if (newPassword && newPassword !== confirmPassword) {
+      setMessage({ type: "error", text: "New passwords do not match." });
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      const payload = {
+        name: username,
+        avatar_url: avatarUrl,
+      };
+
+      if (currentPassword && newPassword) {
+        payload.currentPassword = currentPassword;
+        payload.newPassword = newPassword;
+      }
+
+      const res = await updateProfile(payload);
+      
+      updateUser(res.data.user);
+      setMessage({ type: "success", text: res.data.message || "Profile updated successfully." });
+      
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      console.error(err);
+      setMessage({
+        type: "error",
+        text: err.response?.data?.message || "Failed to update profile. Please try again.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <motion.div
       className="profile-tab-panel"
@@ -681,22 +758,171 @@ function SettingsTab() {
       initial="initial"
       animate="animate"
     >
-      <div className="profile-settings-wrap">
-        <div className="profile-settings-section">
-          <h3>Account Settings</h3>
-          <p className="profile-settings-note">
-            <Settings size={14} />
-            Account settings are coming soon. You can manage your profile
-            details below.
-          </p>
-        </div>
-        <div className="profile-settings-placeholder">
-          <div className="settings-placeholder-icon">
-            <Settings size={24} />
+      <form className="profile-settings-form" onSubmit={handleSave}>
+        <div className="profile-settings-layout">
+          
+          {/* Avatar Section */}
+          <div className="profile-settings-section card">
+            <h3>Avatar Settings</h3>
+            
+            <div className="settings-avatar-flex">
+              <div className="settings-avatar-preview-wrap">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar Preview" className="settings-avatar-preview" />
+                ) : (
+                  <div className="settings-avatar-placeholder">
+                    {username ? username.charAt(0).toUpperCase() : "?"}
+                  </div>
+                )}
+                {avatarUrl && (
+                  <button 
+                    type="button" 
+                    className="delete-avatar-btn" 
+                    onClick={() => setAvatarUrl("")}
+                    title="Delete Avatar"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                )}
+              </div>
+
+              <div className="settings-avatar-upload-box">
+                <p>Upload a custom image or choose a preset</p>
+                <div className="avatar-action-row">
+                  <label className="settings-upload-btn">
+                    <Camera size={14} />
+                    <span>Upload Image</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleFileUpload} 
+                      style={{ display: "none" }} 
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Presets Grid */}
+            <div className="presets-container">
+              <span className="presets-label">Preset Avatars:</span>
+              <div className="presets-grid">
+                {PRESET_AVATARS.map((url, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    className={`preset-btn ${avatarUrl === url ? "selected" : ""}`}
+                    onClick={() => setAvatarUrl(url)}
+                  >
+                    <img src={url} alt={`Preset ${idx + 1}`} />
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <p>More settings will be available soon</p>
+
+          {/* Profile Details Section */}
+          <div className="profile-settings-section card">
+            <h3>Profile Details</h3>
+            
+            <div className="settings-fields-grid">
+              <div className="settings-field-group">
+                <label>Username</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Enter your name"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="settings-input"
+                />
+              </div>
+
+              <div className="settings-field-group">
+                <label>Email Address</label>
+                <input
+                  type="email"
+                  disabled
+                  value={user?.email || ""}
+                  className="settings-input disabled"
+                  title="Email cannot be changed"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Password Section */}
+          <div className="profile-settings-section card">
+            <h3>Change Password</h3>
+            <p className="section-subtitle">Leave blank if you don't want to change your password</p>
+            
+            <div className="settings-fields-grid">
+              <div className="settings-field-group">
+                <label>Current Password</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="settings-input"
+                />
+              </div>
+
+              <div className="settings-field-group">
+                <label>New Password</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="settings-input"
+                />
+              </div>
+
+              <div className="settings-field-group">
+                <label>Confirm New Password</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="settings-input"
+                />
+              </div>
+            </div>
+          </div>
+
         </div>
-      </div>
+
+        {/* Message Banner */}
+        {message && (
+          <div className={`settings-message ${message.type}`}>
+            {message.type === "success" ? <Check size={16} /> : <X size={16} />}
+            <span>{message.text}</span>
+          </div>
+        )}
+
+        {/* Save button */}
+        <div className="settings-footer">
+          <motion.button
+            type="submit"
+            disabled={submitting}
+            className="settings-submit-btn"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {submitting ? (
+              <>
+                <RefreshCw size={14} className="spin-loader" />
+                <span>Saving Changes...</span>
+              </>
+            ) : (
+              <span>Save Changes</span>
+            )}
+          </motion.button>
+        </div>
+
+      </form>
     </motion.div>
   );
 }
@@ -718,14 +944,18 @@ function ProfileHeader({ user }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
-      <motion.button
-        className="profile-back-btn"
-        onClick={() => window.history.back()}
-        whileHover={{ scale: 1.05, x: -2 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        <ArrowLeft size={16} />
-      </motion.button>
+      <div className="profile-header-top-row">
+        <motion.button
+          className="profile-sidebar-back-btn"
+          onClick={() => window.history.back()}
+          whileHover={{ scale: 1.05, x: -2 }}
+          whileTap={{ scale: 0.95 }}
+          title="Go Back"
+        >
+          <ArrowLeft size={14} />
+          <span>Back</span>
+        </motion.button>
+      </div>
 
       <motion.div
         className="profile-avatar-wrap"
@@ -733,7 +963,9 @@ function ProfileHeader({ user }) {
         transition={{ duration: 0.2 }}
       >
         <div className="profile-avatar">
-          {user?.name ? (
+          {user?.avatar_url ? (
+            <img src={user.avatar_url} alt="Avatar" className="profile-avatar-img" />
+          ) : user?.name ? (
             <span>{user.name.charAt(0).toUpperCase()}</span>
           ) : (
             <Camera size={22} />
@@ -764,7 +996,7 @@ function ProfileHeader({ user }) {
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState("overview");
   const [viewMode, setViewMode] = useState("grid");
@@ -895,24 +1127,6 @@ export default function Profile() {
           >
             {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
           </motion.button>
-          <motion.button
-            className="profile-nav-btn"
-            onClick={() => navigate("/builder")}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-          >
-            <Sparkles size={14} />
-            Builder
-          </motion.button>
-          <motion.button
-            className="profile-nav-btn"
-            onClick={() => navigate("/")}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-          >
-            <ArrowLeft size={14} />
-            Home
-          </motion.button>
         </div>
       </motion.nav>
 
@@ -970,7 +1184,9 @@ export default function Profile() {
               />
             )}
 
-            {activeTab === "settings" && <SettingsTab key="settings" />}
+            {activeTab === "settings" && (
+              <SettingsTab key="settings" user={user} updateUser={updateUser} />
+            )}
           </AnimatePresence>
         </main>
       </div>

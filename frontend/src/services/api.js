@@ -26,6 +26,7 @@ export const toggleFavourite = (id) =>
 // Profile & stats
 export const getProfileStats = () => API.get("/api/history/stats");
 export const getAllGenerations = () => API.get("/api/history");
+export const updateProfile = (data) => API.put("/api/auth/profile", data);
 
 // Projects (uses same history data, grouped conceptually)
 export const getProjects = () => API.get("/api/history");

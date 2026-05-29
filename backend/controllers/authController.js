@@ -36,7 +36,7 @@ const register = async (req, res) => {
 
     // Insert new user
     const result = await pool.query(
-      "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email",
+      "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, avatar_url",
       [name, email, hashedPassword],
     );
 
@@ -52,7 +52,7 @@ const register = async (req, res) => {
     return res.status(201).json({
       message: "Registration successful.",
       token,
-      user: { id: user.id, name: user.name, email: user.email },
+      user: { id: user.id, name: user.name, email: user.email, avatar_url: user.avatar_url },
     });
   } catch (error) {
     console.error("Register error:", error.message);
@@ -102,7 +102,7 @@ const login = async (req, res) => {
     return res.status(200).json({
       message: "Login successful.",
       token,
-      user: { id: user.id, name: user.name, email: user.email },
+      user: { id: user.id, name: user.name, email: user.email, avatar_url: user.avatar_url },
     });
   } catch (error) {
     console.error("Login error:", error.message);
@@ -165,7 +165,7 @@ const googleLogin = async (req, res) => {
       const hashedPassword = await bcrypt.hash(randomPassword, 10);
       
       const insertResult = await pool.query(
-        "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email",
+        "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, avatar_url",
         [name || "Google User", email, hashedPassword]
       );
       user = insertResult.rows[0];
@@ -183,7 +183,7 @@ const googleLogin = async (req, res) => {
     return res.status(200).json({
       message: "Google login successful.",
       token: authToken,
-      user: { id: user.id, name: user.name, email: user.email }
+      user: { id: user.id, name: user.name, email: user.email, avatar_url: user.avatar_url }
     });
   } catch (error) {
     console.error("Google Auth login error:", error.message);
@@ -191,4 +191,83 @@ const googleLogin = async (req, res) => {
   }
 };
 
-module.exports = { register, login, googleLogin };
+// -------------------------------------------------------
+// UPDATE PROFILE
+// PUT /api/auth/profile
+// -------------------------------------------------------
+const updateProfile = async (req, res) => {
+  const { name, avatar_url, currentPassword, newPassword } = req.body;
+  const userId = req.user?.id;
+
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized." });
+  }
+
+  try {
+    // 1. Get current user data
+    const userRes = await pool.query("SELECT * FROM users WHERE id = $1", [userId]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    const user = userRes.rows[0];
+
+    let updateFields = [];
+    let queryParams = [];
+    let paramIndex = 1;
+
+    // Handle name change
+    if (name && name !== user.name) {
+      updateFields.push(`name = $${paramIndex++}`);
+      queryParams.push(name);
+    }
+
+    // Handle avatar change
+    if (avatar_url !== undefined && avatar_url !== user.avatar_url) {
+      updateFields.push(`avatar_url = $${paramIndex++}`);
+      queryParams.push(avatar_url);
+    }
+
+    // Handle password change
+    if (currentPassword && newPassword) {
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: "Incorrect current password." });
+      }
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "New password must be at least 6 characters." });
+      }
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      updateFields.push(`password = $${paramIndex++}`);
+      queryParams.push(hashedPassword);
+    }
+
+    if (updateFields.length === 0) {
+      return res.json({
+        message: "No changes to update.",
+        user: { id: user.id, name: user.name, email: user.email, avatar_url: user.avatar_url }
+      });
+    }
+
+    queryParams.push(userId);
+    const updateQuery = `
+      UPDATE users 
+      SET ${updateFields.join(", ")} 
+      WHERE id = $${paramIndex} 
+      RETURNING id, name, email, avatar_url
+    `;
+
+    const updatedRes = await pool.query(updateQuery, queryParams);
+    const updatedUser = updatedRes.rows[0];
+
+    return res.json({
+      message: "Profile updated successfully.",
+      user: updatedUser
+    });
+
+  } catch (error) {
+    console.error("Update profile error:", error.message);
+    return res.status(500).json({ message: "Server error. Please try again." });
+  }
+};
+
+module.exports = { register, login, googleLogin, updateProfile };

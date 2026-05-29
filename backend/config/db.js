@@ -13,7 +13,18 @@ pool.connect((err, client, release) => {
     console.error("❌ Database connection failed:", err.message);
   } else {
     console.log("✅ Database connected successfully");
-    release();
+    // Run schema updates
+    client.query(
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;",
+      (queryErr) => {
+        release();
+        if (queryErr) {
+          console.error("❌ Schema update failed:", queryErr.message);
+        } else {
+          console.log("✅ Schema checked/updated successfully (users.avatar_url ensured)");
+        }
+      }
+    );
   }
 });
 
