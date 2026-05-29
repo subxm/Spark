@@ -1562,3 +1562,45 @@
   to { transform: rotate(360deg); }
 }
 
+.profile-sidebar-footer {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--profile-border);
+}
+
+.profile-logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.65rem;
+  font-family: "Sora", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(220, 100, 100, 0.08);
+  border: 1px solid rgba(220, 100, 100, 0.2);
+  color: #dc6464;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.profile-logout-btn:hover {
+  background: rgba(220, 100, 100, 0.15);
+  border-color: rgba(220, 100, 100, 0.35);
+  color: #e57373;
+  box-shadow: 0 4px 12px rgba(220, 100, 100, 0.1);
+}
+
+:root.dark .profile-logout-btn {
+  background: rgba(220, 100, 100, 0.1);
+  border-color: rgba(220, 100, 100, 0.25);
+  color: #e88080;
+}
+
+:root.dark .profile-logout-btn:hover {
+  background: rgba(220, 100, 100, 0.18);
+  border-color: rgba(220, 100, 100, 0.4);
+  color: #ff9494;
+}

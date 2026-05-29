@@ -32,6 +32,7 @@ import {
   Moon,
   Wand2,
   Pencil,
+  Plus,
 } from "lucide-react";
 import {
   generateCode as generateCodeRequest,
@@ -90,7 +91,7 @@ export default function Component() {
 
 export default function Builder() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   
   const [prompt, setPrompt] = useState("");
@@ -308,7 +309,7 @@ export default function Builder() {
   };
 
 
-  const handleClear = () => {
+  const handleNewChat = () => {
     setPrompt("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     setCodeHistory([]);
@@ -779,19 +780,19 @@ export default function Builder() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
               >
-                <div>
-                  <h1>Spark Builder</h1>
-                  <p>Welcome, {user?.name || "Builder"}</p>
+                <div className="builder-left-head-title-wrap">
+                  <span className="active-dot" />
+                  <p className="welcome-text">Welcome, {user?.name || "Builder"}</p>
                 </div>
                 <div style={{ display: "flex", gap: "0.45rem" }}>
                   <motion.button
                     className="builder-header-btn"
-                    onClick={logout}
-                    title="Logout"
+                    onClick={handleNewChat}
+                    title="New Chat"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <LogOut size={16} />
+                    <Plus size={16} />
                   </motion.button>
                 </div>
               </motion.div>
@@ -799,26 +800,58 @@ export default function Builder() {
               <div className="builder-upper-area">
                 <section className="builder-chat-panel" ref={chatScrollRef}>
                   <AnimatePresence>
-                    {chatMessages.map((message, index) => (
-                      <motion.article
-                        key={message.id}
-                        className={`builder-chat-item ${message.role === "user" ? "user" : "assistant"}`}
-                        initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        transition={{ duration: 0.3, delay: index * 0.02 }}
-                      >
-                        <span className="builder-chat-role">{message.role === "user" ? "You" : "Spark"}</span>
-                        <p>{message.text}</p>
-                      </motion.article>
-                    ))}
+                    {chatMessages.map((message, index) => {
+                      const isUser = message.role === "user";
+                      return (
+                        <motion.article
+                          key={message.id}
+                          className={`builder-chat-item ${isUser ? "user" : "assistant"}`}
+                          initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          transition={{ duration: 0.3, delay: index * 0.02 }}
+                        >
+                          <div className="builder-chat-avatar-wrap">
+                            {isUser ? (
+                              user?.avatar_url ? (
+                                <img src={user.avatar_url} alt="You" className="chat-avatar-img" />
+                              ) : (
+                                <div className="chat-avatar-initial">
+                                  {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                                </div>
+                              )
+                            ) : (
+                              <div className="chat-avatar-spark">
+                                <Sparkles size={13} />
+                              </div>
+                            )}
+                          </div>
+                          <div className="builder-chat-content">
+                            <span className="builder-chat-role">{isUser ? "You" : "Spark"}</span>
+                            <p className="builder-chat-text">{message.text}</p>
+                          </div>
+                        </motion.article>
+                      );
+                    })}
                   </AnimatePresence>
                   {loading && (
                     <motion.div
-                      className="builder-chat-typing"
+                      className="builder-chat-item assistant typing"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                     >
-                      Spark is thinking
+                      <div className="builder-chat-avatar-wrap">
+                        <div className="chat-avatar-spark">
+                          <Sparkles size={13} />
+                        </div>
+                      </div>
+                      <div className="builder-chat-content">
+                        <span className="builder-chat-role">Spark</span>
+                        <div className="typing-dots">
+                          <span className="dot"></span>
+                          <span className="dot"></span>
+                          <span className="dot"></span>
+                        </div>
+                      </div>
                     </motion.div>
                   )}
                 </section>
@@ -854,7 +887,7 @@ export default function Builder() {
                       {generatedCode && (
                         <motion.button
                           className="builder-clear-link"
-                          onClick={handleClear}
+                          onClick={handleNewChat}
                           whileHover={{ color: "#d8a141" }}
                         >
                           Clear

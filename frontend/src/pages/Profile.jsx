@@ -32,6 +32,7 @@ import {
   Sun,
   Moon,
   Code2,
+  LogOut,
 } from "lucide-react";
 import {
   getProfileStats,
@@ -988,7 +989,7 @@ function ProfileHeader({ user }) {
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState("overview");
   const [viewMode, setViewMode] = useState("grid");
@@ -1127,6 +1128,21 @@ export default function Profile() {
         <aside className="profile-sidebar">
           <ProfileHeader user={user} />
           <StatsCards stats={stats} loading={loadingStats} />
+          
+          <div className="profile-sidebar-footer">
+            <motion.button
+              className="profile-logout-btn"
+              onClick={() => {
+                logout();
+                navigate("/login");
+              }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <LogOut size={15} />
+              <span>Sign Out</span>
+            </motion.button>
+          </div>
         </aside>
 
         {/* Main Content */}
