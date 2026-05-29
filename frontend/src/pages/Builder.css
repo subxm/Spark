@@ -220,19 +220,51 @@
 }
 
 .center-chat-logo {
-  width: 60px;
-  height: 60px;
-  border-radius: 16px;
-  background: var(--builder-card-bg);
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--white) 0%, var(--paper-2) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 32px var(--builder-shadow), 0 0 60px var(--builder-glow);
-  border: 1px solid var(--builder-border);
+  box-shadow: 0 10px 30px rgba(185, 134, 48, 0.12), 0 0 45px var(--accent-soft);
+  border: 2px solid var(--builder-accent);
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.center-chat-logo::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 1px dashed var(--builder-accent);
+  opacity: 0.5;
+  animation: logo-spin 25s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes logo-spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.dark .center-chat-logo {
+  background: linear-gradient(135deg, var(--paper-2) 0%, var(--paper) 100%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 45px rgba(216, 161, 65, 0.1);
+  border-color: var(--builder-accent);
 }
 
 .center-chat-logo svg {
   color: var(--builder-accent);
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 2px 4px rgba(185, 134, 48, 0.2));
+}
+
+.dark .center-chat-logo svg {
+  filter: drop-shadow(0 2px 8px rgba(216, 161, 65, 0.4));
 }
 
 .center-chat-title {
@@ -273,15 +305,15 @@
 
 .center-chat-textarea {
   width: 100%;
-  min-height: 90px;
-  max-height: 180px;
+  min-height: 130px;
+  max-height: 350px;
   resize: none;
   border: none;
   background: transparent;
   color: var(--builder-text);
   font-family: "Sora", sans-serif;
-  font-size: 1rem;
-  line-height: 1.5;
+  font-size: 1.05rem;
+  line-height: 1.6;
   padding: 1.1rem 1.1rem 0.65rem;
 }
 
@@ -1408,4 +1440,73 @@
   border-color: var(--builder-accent);
   color: var(--builder-accent);
   box-shadow: 0 6px 28px var(--builder-glow), 0 0 0 1px var(--builder-accent);
+}
+
+/* ===== TOPNAV EDITABLE PROJECT NAME INDICATOR ===== */
+.topnav-project-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  position: relative;
+}
+
+.project-name-edit-icon {
+  color: var(--builder-text-muted);
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.2s ease, color 0.25s ease;
+}
+
+.topnav-project-name-wrapper:hover .project-name-edit-icon {
+  opacity: 1;
+  color: var(--builder-accent);
+}
+
+.topnav-project-name:focus ~ .project-name-edit-icon {
+  color: var(--builder-accent);
+  opacity: 1;
+}
+
+/* ===== HISTORY SIDEBAR TABS ===== */
+.history-sidebar-tabs {
+  display: flex;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--builder-border);
+  gap: 0.5rem;
+  background: var(--builder-panel-bg);
+}
+
+.history-sidebar-tab {
+  flex: 1;
+  padding: 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--builder-text-muted);
+  font-family: "Sora", sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.history-sidebar-tab:hover {
+  color: var(--builder-text);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.dark .history-sidebar-tab:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.history-sidebar-tab.active {
+  color: var(--white);
+  background: var(--builder-accent);
+  box-shadow: 0 4px 12px var(--accent-soft);
+}
+
+.dark .history-sidebar-tab.active {
+  color: #0c0a08;
+  background: var(--builder-accent);
 }

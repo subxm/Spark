@@ -30,6 +30,8 @@ import {
   User,
   Sun,
   Moon,
+  Wand2,
+  Pencil,
 } from "lucide-react";
 import {
   generateCode as generateCodeRequest,
@@ -110,6 +112,7 @@ export default function Builder() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("preview");
+  const [libraryTab, setLibraryTab] = useState("all");
   const viewport = "desktop";
   const [copied, setCopied] = useState(false);
   const [leftPaneWidth, setLeftPaneWidth] = useState(38);
@@ -337,7 +340,7 @@ export default function Builder() {
     setPrompt(e.target.value);
     if (centerTextareaRef.current) {
       centerTextareaRef.current.style.height = "auto";
-      centerTextareaRef.current.style.height = `${Math.min(centerTextareaRef.current.scrollHeight, 180)}px`;
+      centerTextareaRef.current.style.height = `${Math.min(centerTextareaRef.current.scrollHeight, 350)}px`;
     }
   };
 
@@ -492,18 +495,20 @@ export default function Builder() {
       >
         <div className="topnav-left">
           <div className="topnav-logo" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
-            <Sparkles size={18} />
             <span>Spark</span>
           </div>
         </div>
         <div className="topnav-center">
-          <input
-            type="text"
-            className="topnav-project-name"
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
-            placeholder="Project name..."
-          />
+          <div className="topnav-project-name-wrapper">
+            <input
+              type="text"
+              className="topnav-project-name"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              placeholder="Project name..."
+            />
+            <Pencil size={12} className="project-name-edit-icon" />
+          </div>
         </div>
         <div className="topnav-right">
           {generatedCode && (
@@ -567,48 +572,82 @@ export default function Builder() {
                   <X size={18} />
                 </button>
               </div>
+              <div className="history-sidebar-tabs">
+                <button
+                  className={`history-sidebar-tab ${libraryTab === "all" ? "active" : ""}`}
+                  onClick={() => setLibraryTab("all")}
+                >
+                  All
+                </button>
+                <button
+                  className={`history-sidebar-tab ${libraryTab === "liked" ? "active" : ""}`}
+                  onClick={() => setLibraryTab("liked")}
+                >
+                  Liked
+                </button>
+              </div>
               <div className="history-sidebar-content">
                 {historyLoading ? (
                   <div className="history-loading">
                     <span className="spinner"></span>
                   </div>
-                ) : !Array.isArray(historyData) || historyData.length === 0 ? (
-                  <div className="history-empty">
-                    <History size={32} />
-                    <p>No saved projects yet.</p>
-                    <span>Generations will appear here.</span>
-                  </div>
-                ) : (
-                  <div className="history-grid">
-                    {historyData.map((item, index) => (
-                      <motion.div
-                        key={item.id}
-                        className="history-card"
-                        onClick={() => handleLoadHistory(item)}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                      >
-                        <div className="history-card-head">
-                          <span className="history-date">
-                            {new Date(item.created_at).toLocaleDateString(undefined, {
-                              month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-                            })}
-                          </span>
-                          <div className="history-actions">
-                            <button className="action-btn" onClick={(e) => handleToggleFavourite(item, e)}>
-                              <Heart size={14} className={item.is_favourite ? "filled" : ""} />
-                            </button>
-                            <button className="action-btn delete-btn" onClick={(e) => handleDeleteHistory(item, e)}>
-                              <Trash2 size={14} />
-                            </button>
+                ) : (() => {
+                  const filtered = libraryTab === "all"
+                    ? historyData
+                    : historyData.filter((item) => item.is_favourite);
+
+                  if (!Array.isArray(filtered) || filtered.length === 0) {
+                    return (
+                      <div className="history-empty">
+                        {libraryTab === "all" ? (
+                          <>
+                            <History size={32} />
+                            <p>No saved projects yet.</p>
+                            <span>Generations will appear here.</span>
+                          </>
+                        ) : (
+                          <>
+                            <Heart size={32} />
+                            <p>No liked projects yet.</p>
+                            <span>Click the heart icon on any project to see it here.</span>
+                          </>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="history-grid">
+                      {filtered.map((item, index) => (
+                        <motion.div
+                          key={item.id}
+                          className="history-card"
+                          onClick={() => handleLoadHistory(item)}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                        >
+                          <div className="history-card-head">
+                            <span className="history-date">
+                              {new Date(item.created_at).toLocaleDateString(undefined, {
+                                month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+                              })}
+                            </span>
+                            <div className="history-actions">
+                              <button className="action-btn" onClick={(e) => handleToggleFavourite(item, e)}>
+                                <Heart size={14} className={item.is_favourite ? "filled" : ""} />
+                              </button>
+                              <button className="action-btn delete-btn" onClick={(e) => handleDeleteHistory(item, e)}>
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                        <p className="history-prompt">{item.prompt}</p>
-                      </motion.div>
-                    ))}
-                  </div>
-                )}
+                          <p className="history-prompt">{item.prompt}</p>
+                        </motion.div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             </motion.div>
           </>
@@ -638,7 +677,7 @@ export default function Builder() {
                 whileHover={{ scale: 1.05, boxShadow: "0 12px 32px var(--accent-soft)" }}
                 transition={{ duration: 0.2 }}
               >
-                <Sparkles size={28} />
+                <Wand2 size={28} />
               </motion.div>
               <motion.h1 className="center-chat-title" variants={itemVariants}>
                 What will you build today?
