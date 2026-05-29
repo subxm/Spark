@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { loginUser, loginWithGoogle } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
@@ -15,6 +15,8 @@ export default function Login() {
   const { login } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/builder";
 
   const handleGoogleLogin = () => {
     if (window.google) {
@@ -29,7 +31,7 @@ export default function Login() {
               addToast("Signed in successfully. Redirecting...", "success");
               setTimeout(() => {
                 login(res.data.user, res.data.token);
-                navigate("/builder");
+                navigate(from);
               }, 150);
             } catch (err) {
               addToast(err.response?.data?.message || "Google Sign-in failed. Try again.", "error");
@@ -89,7 +91,7 @@ export default function Login() {
       addToast("Signed in successfully. Redirecting...", "success");
       setTimeout(() => {
         login(res.data.user, res.data.token);
-        navigate("/builder");
+        navigate(from);
       }, 150);
     } catch (err) {
       addToast(err.response?.data?.message || "Login failed. Try again.", "error");

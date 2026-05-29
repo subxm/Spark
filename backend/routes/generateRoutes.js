@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const crypto = require("crypto");
 const authMiddleware = require("../middleware/authMiddleware");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const pool = require("../config/db");
@@ -211,9 +212,10 @@ IMPORTANT:
 
     // Save to database
     try {
+      const shareId = crypto.randomBytes(8).toString("hex");
       const dbResult = await pool.query(
-        "INSERT INTO generations (user_id, prompt, generated_code) VALUES ($1, $2, $3) RETURNING id, created_at",
-        [userId, prompt, generatedCode],
+        "INSERT INTO generations (user_id, prompt, generated_code, share_id) VALUES ($1, $2, $3, $4) RETURNING id, share_id, created_at",
+        [userId, prompt, generatedCode, shareId],
       );
 
       const generation = dbResult.rows[0];
@@ -221,6 +223,7 @@ IMPORTANT:
       return res.status(200).json({
         message: "Code generated successfully.",
         id: generation.id,
+        shareId: generation.share_id,
         code: generatedCode,
         createdAt: generation.created_at,
       });

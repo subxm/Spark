@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { ToastProvider } from "./context/ToastContext";
@@ -11,8 +11,13 @@ import Profile from "./pages/Profile";
 // Protected route — redirects to login if not authenticated
 const ProtectedRoute = ({ children }) => {
   const { token } = useAuth();
+  const location = useLocation();
   const isAuthenticated = token && token !== "undefined" && token !== "null";
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  return isAuthenticated ? (
+    children
+  ) : (
+    <Navigate to="/login" state={{ from: location }} replace />
+  );
 };
 
 function AppRoutes() {
@@ -23,6 +28,14 @@ function AppRoutes() {
       <Route path="/register" element={<Register />} />
       <Route
         path="/builder"
+        element={
+          <ProtectedRoute>
+            <Builder />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/builder/:shareId"
         element={
           <ProtectedRoute>
             <Builder />

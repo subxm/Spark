@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,6 +38,7 @@ import {
   getHistory,
   deleteHistory,
   toggleFavourite,
+  getProjectByShareId,
 } from "../services/api";
 import Prism from "prismjs";
 import "prismjs/themes/prism-tomorrow.css";
@@ -92,6 +93,8 @@ export default function Builder() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { shareId } = useParams();
+  const [loadedShareId, setLoadedShareId] = useState(null);
   
   const [prompt, setPrompt] = useState("");
   const [isActive, setIsActive] = useState(false);
@@ -165,6 +168,44 @@ export default function Builder() {
     if (isHistoryOpen) fetchHistory();
   }, [isHistoryOpen]);
 
+  // Load project by shareId from URL on mount or URL change
+  useEffect(() => {
+    if (shareId) {
+      if (shareId === loadedShareId) return;
+
+      const loadProject = async () => {
+        try {
+          setLoading(true);
+          const res = await getProjectByShareId(shareId);
+          const project = res.data;
+
+          setIsActive(true);
+          setChatMessages([
+            { id: `loaded-${project.id}`, role: "user", text: project.prompt },
+            { id: `loaded-res-${project.id}`, role: "assistant", text: "I've restored this project for you." },
+          ]);
+          setCodeHistory([project.generated_code]);
+          setCurrentHistoryIndex(0);
+          setLoadedShareId(project.share_id);
+          setProjectName(project.prompt.length > 30 ? project.prompt.substring(0, 30) + "..." : project.prompt);
+          setActiveTab("preview");
+          setConsoleLogs([]);
+        } catch (err) {
+          console.error("Failed to load project", err);
+          setError("Failed to load project or project not found.");
+          navigate("/builder");
+        } finally {
+          setLoading(false);
+        }
+      };
+      loadProject();
+    } else {
+      if (loadedShareId) {
+        handleNewChat();
+      }
+    }
+  }, [shareId, loadedShareId, handleNewChat, navigate]);
+
   const handleToggleFavourite = async (item, e) => {
     e.stopPropagation();
     try {
@@ -196,9 +237,12 @@ export default function Builder() {
     ]);
     setCodeHistory([item.generated_code]);
     setCurrentHistoryIndex(0);
+    setLoadedShareId(item.share_id);
+    setProjectName(item.prompt.length > 30 ? item.prompt.substring(0, 30) + "..." : item.prompt);
     setActiveTab("preview");
     setConsoleLogs([]);
     setIsHistoryOpen(false);
+    navigate(`/builder/${item.share_id}`);
   };
 
   const promptIdeas = [
@@ -256,6 +300,15 @@ export default function Builder() {
       ]);
       setCurrentHistoryIndex((prev) => prev + 1);
 
+      if (data.shareId) {
+        setLoadedShareId(data.shareId);
+        navigate(`/builder/${data.shareId}`, { replace: true });
+      }
+
+      if (projectName === "Untitled Project") {
+        setProjectName(trimmedPrompt.length > 30 ? trimmedPrompt.substring(0, 30) + "..." : trimmedPrompt);
+      }
+
       setChatMessages((prev) =>
         prev.map((msg) =>
           msg.id === pendingId
@@ -308,7 +361,7 @@ export default function Builder() {
   };
 
 
-  const handleNewChat = () => {
+  const handleNewChat = useCallback(() => {
     setPrompt("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     setCodeHistory([]);
@@ -318,6 +371,7 @@ export default function Builder() {
     setIsActive(false);
     setConsoleLogs([]);
     setProjectName("Untitled Project");
+    setLoadedShareId(null);
     setChatMessages([
       {
         id: "assistant-welcome",
@@ -325,7 +379,10 @@ export default function Builder() {
         text: "Describe what you want to build, and I'll generate the UI code for you.",
       },
     ]);
-  };
+    if (window.location.pathname !== "/builder") {
+      navigate("/builder");
+    }
+  }, [navigate]);
 
   const handleFocusProjectName = () => {
     if (projectNameInputRef.current) {

@@ -1015,16 +1015,8 @@ export default function Profile() {
   }, []);
 
   const handleLoadItem = (item) => {
-    // Navigate to builder with the generation loaded
-    navigate("/builder", {
-      state: {
-        loadedGeneration: {
-          id: item.id,
-          prompt: item.prompt,
-          code: item.generated_code,
-        },
-      },
-    });
+    // Navigate to builder with the project's share_id in URL
+    navigate(`/builder/${item.share_id}`);
   };
 
   const handleDelete = async (item) => {

@@ -27,6 +27,7 @@ export const toggleFavourite = (id) =>
 export const getProfileStats = () => API.get("/api/history/stats");
 export const getAllGenerations = () => API.get("/api/history");
 export const updateProfile = (data) => API.put("/api/auth/profile", data);
+export const getProjectByShareId = (shareId) => API.get(`/api/history/project/${shareId}`);
 
 // Projects (uses same history data, grouped conceptually)
 export const getProjects = () => API.get("/api/history");
