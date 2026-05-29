@@ -90,7 +90,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #f4ece0;
+  color: var(--profile-text);
   font-weight: 700;
   font-size: 1rem;
 }

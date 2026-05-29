@@ -1,0 +1,116 @@
+.toast-container {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: none;
+  max-width: 380px;
+  width: calc(100vw - 3rem);
+}
+
+.toast-item {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  font-family: "Sora", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.4;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: border-color 0.25s ease;
+}
+
+/* Success Toast */
+.toast-item.success {
+  background: rgba(19, 17, 14, 0.85);
+  border: 1px solid rgba(216, 161, 65, 0.35);
+  color: #f4ece0;
+}
+
+.toast-item.success .toast-icon {
+  color: #d8a141;
+}
+
+.toast-item.success .toast-close-btn {
+  color: #a69885;
+}
+
+.toast-item.success .toast-close-btn:hover {
+  color: #f4ece0;
+}
+
+/* Error Toast */
+.toast-item.error {
+  background: rgba(28, 14, 14, 0.85);
+  border: 1px solid rgba(220, 100, 100, 0.3);
+  color: #fcebeb;
+}
+
+.toast-item.error .toast-icon {
+  color: #e88080;
+}
+
+.toast-item.error .toast-close-btn {
+  color: #caa5a5;
+}
+
+.toast-item.error .toast-close-btn:hover {
+  color: #fcebeb;
+}
+
+/* Info Toast */
+.toast-item.info {
+  background: rgba(14, 22, 28, 0.85);
+  border: 1px solid rgba(125, 184, 212, 0.3);
+  color: #ebf5fc;
+}
+
+.toast-item.info .toast-icon {
+  color: #7db8d4;
+}
+
+.toast-item.info .toast-close-btn {
+  color: #a5bcc5;
+}
+
+.toast-item.info .toast-close-btn:hover {
+  color: #ebf5fc;
+}
+
+.toast-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.1rem;
+  flex-shrink: 0;
+}
+
+.toast-message {
+  flex: 1;
+}
+
+.toast-close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  margin-top: 0.1rem;
+  flex-shrink: 0;
+}
+
+.toast-close-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}

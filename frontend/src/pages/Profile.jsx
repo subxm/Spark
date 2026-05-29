@@ -42,6 +42,7 @@ import {
 } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { useToast } from "../context/ToastContext";
 import "./Profile.css";
 
 // ─── Animation Variants ──────────────────────────────────────────────────────
@@ -681,7 +682,7 @@ function SettingsTab({ user, updateUser }) {
   const [confirmPassword, setConfirmPassword] = useState("");
   
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState(null);
+  const { addToast } = useToast();
 
   // Presets of beautiful avatars
   const PRESET_AVATARS = [
@@ -698,7 +699,7 @@ function SettingsTab({ user, updateUser }) {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      setMessage({ type: "error", text: "Image size must be under 2MB." });
+      addToast("Image size must be under 2MB.", "error");
       return;
     }
 
@@ -712,10 +713,9 @@ function SettingsTab({ user, updateUser }) {
   const handleSave = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setMessage(null);
 
     if (newPassword && newPassword !== confirmPassword) {
-      setMessage({ type: "error", text: "New passwords do not match." });
+      addToast("New passwords do not match.", "error");
       setSubmitting(false);
       return;
     }
@@ -734,17 +734,17 @@ function SettingsTab({ user, updateUser }) {
       const res = await updateProfile(payload);
       
       updateUser(res.data.user);
-      setMessage({ type: "success", text: res.data.message || "Profile updated successfully." });
+      addToast(res.data.message || "Profile updated successfully.", "success");
       
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err) {
       console.error(err);
-      setMessage({
-        type: "error",
-        text: err.response?.data?.message || "Failed to update profile. Please try again.",
-      });
+      addToast(
+        err.response?.data?.message || "Failed to update profile. Please try again.",
+        "error"
+      );
     } finally {
       setSubmitting(false);
     }
@@ -893,14 +893,6 @@ function SettingsTab({ user, updateUser }) {
           </div>
 
         </div>
-
-        {/* Message Banner */}
-        {message && (
-          <div className={`settings-message ${message.type}`}>
-            {message.type === "success" ? <Check size={16} /> : <X size={16} />}
-            <span>{message.text}</span>
-          </div>
-        )}
 
         {/* Save button */}
         <div className="settings-footer">

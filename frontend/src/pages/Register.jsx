@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser, loginWithGoogle } from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import FormInput, { getPasswordStrength } from "../components/FormInput";
 import { User, Mail, Lock, ArrowRight, Check } from "lucide-react";
 import "./Auth.css";
@@ -9,10 +10,10 @@ import "./Auth.css";
 export default function Register() {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [errors, setErrors] = useState({});
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const { login } = useAuth();
+  const { addToast } = useToast();
   const navigate = useNavigate();
   const passwordStrength = getPasswordStrength(form.password);
 
@@ -24,17 +25,16 @@ export default function Register() {
         callback: async (tokenResponse) => {
           if (tokenResponse && tokenResponse.access_token) {
             setLoading(true);
-            setError("");
-            setSuccess(false);
             try {
               const res = await loginWithGoogle(tokenResponse.access_token);
               setSuccess(true);
+              addToast("Signed up successfully. Redirecting...", "success");
               setTimeout(() => {
                 login(res.data.user, res.data.token);
                 navigate("/builder");
               }, 150);
             } catch (err) {
-              setError(err.response?.data?.message || "Google Sign-in failed. Try again.");
+              addToast(err.response?.data?.message || "Google Sign-in failed. Try again.", "error");
               setLoading(false);
             }
           }
@@ -85,20 +85,21 @@ export default function Register() {
     e.preventDefault();
     if (!validateForm()) return;
 
-    setError("");
     setLoading(true);
     setSuccess(false);
 
     try {
       const res = await registerUser(form);
       setSuccess(true);
+      addToast("Account created successfully. Redirecting...", "success");
       setTimeout(() => {
         login(res.data.user, res.data.token);
         navigate("/builder");
       }, 150);
     } catch (err) {
-      setError(
+      addToast(
         err.response?.data?.message || "Registration failed. Try again.",
+        "error"
       );
       setLoading(false);
     }
@@ -168,12 +169,7 @@ export default function Register() {
             <span>or register with email</span>
           </div>
 
-          {error && <div className="auth-alert error">{error}</div>}
-          {success && (
-            <div className="auth-alert success">
-              Account created. Redirecting...
-            </div>
-          )}
+
 
           <form onSubmit={handleSubmit} className={`auth-form ${loading ? "is-submitting" : ""} ${success ? "is-success" : ""}`}>
             <FormInput
