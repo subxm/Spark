@@ -9,7 +9,6 @@ import {
   Sparkles,
   Eye,
   Code2,
-  MessageSquare,
   ArrowRight,
   Monitor,
   Tablet,
@@ -873,16 +872,7 @@ export default function Builder() {
                     className="builder-compose-input"
                   />
                   <div className="builder-compose-actions">
-                    <div className="builder-compose-tools">
-                      <motion.button
-                        className="builder-tool-btn"
-                        aria-label="Message mode"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <MessageSquare size={15} />
-                      </motion.button>
-                    </div>
+                    <div />
                     <div className="builder-compose-submit">
                       {generatedCode && (
                         <motion.button
@@ -905,7 +895,7 @@ export default function Builder() {
                     </div>
                   </div>
                 </motion.div>
-                {error && (
+                {error && !error.toLowerCase().includes("quota") && (
                   <motion.div
                     className="builder-alert error"
                     initial={{ opacity: 0, y: -5 }}
