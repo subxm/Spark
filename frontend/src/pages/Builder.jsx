@@ -133,6 +133,29 @@ export default function Builder() {
   const [projectName, setProjectName] = useState("Untitled Project");
   const [activeCodeTab, setActiveCodeTab] = useState("html");
 
+  const handleNewChat = useCallback(() => {
+    setPrompt("");
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
+    setCodeHistory([]);
+    setCurrentHistoryIndex(-1);
+    setError("");
+    setActiveTab("preview");
+    setIsActive(false);
+    setConsoleLogs([]);
+    setProjectName("Untitled Project");
+    setLoadedShareId(null);
+    setChatMessages([
+      {
+        id: "assistant-welcome",
+        role: "assistant",
+        text: "Describe what you want to build, and I'll generate the UI code for you.",
+      },
+    ]);
+    if (window.location.pathname !== "/builder") {
+      navigate("/builder");
+    }
+  }, [navigate]);
+
   // Setup iframe console messages listener
   useEffect(() => {
     const handleIframeMessage = (event) => {
@@ -360,29 +383,6 @@ export default function Builder() {
     URL.revokeObjectURL(url);
   };
 
-
-  const handleNewChat = useCallback(() => {
-    setPrompt("");
-    if (textareaRef.current) textareaRef.current.style.height = "auto";
-    setCodeHistory([]);
-    setCurrentHistoryIndex(-1);
-    setError("");
-    setActiveTab("preview");
-    setIsActive(false);
-    setConsoleLogs([]);
-    setProjectName("Untitled Project");
-    setLoadedShareId(null);
-    setChatMessages([
-      {
-        id: "assistant-welcome",
-        role: "assistant",
-        text: "Describe what you want to build, and I'll generate the UI code for you.",
-      },
-    ]);
-    if (window.location.pathname !== "/builder") {
-      navigate("/builder");
-    }
-  }, [navigate]);
 
   const handleFocusProjectName = () => {
     if (projectNameInputRef.current) {
