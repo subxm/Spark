@@ -1149,20 +1149,6 @@ export default function Builder() {
           </>
         )}
       </motion.div>
-
-      {/* Floating Library Button - Bottom Left */}
-      <motion.button
-        className="builder-floating-library"
-        onClick={() => setIsHistoryOpen(true)}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-        title="Projects Library"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        <Library size={20} />
-      </motion.button>
     </div>
   );
 }
