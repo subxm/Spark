@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
+import { useToast } from "../context/ToastContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Copy,
@@ -10,6 +11,7 @@ import {
   Eye,
   Code2,
   ArrowRight,
+  Send,
   Monitor,
   Tablet,
   Smartphone,
@@ -32,6 +34,9 @@ import {
   Wand2,
   Pencil,
   Plus,
+  PanelLeftOpen,
+  PanelLeftClose,
+  Search,
 } from "lucide-react";
 import {
   generateCode as generateCodeRequest,
@@ -91,10 +96,17 @@ export default function Component() {
 
 export default function Builder() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { addToast } = useToast();
   const { shareId } = useParams();
   const [loadedShareId, setLoadedShareId] = useState(null);
+
+  useEffect(() => {
+    if (theme !== "dark" && typeof toggleTheme === "function") {
+      toggleTheme();
+    }
+  }, [theme, toggleTheme]);
   
   const [prompt, setPrompt] = useState("");
   const [isActive, setIsActive] = useState(false);
@@ -126,12 +138,22 @@ export default function Builder() {
   const textareaRef = useRef(null);
   const centerTextareaRef = useRef(null);
   const projectNameInputRef = useRef(null);
+  const isGeneratingRef = useRef(false);
 
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const [historyData, setHistoryData] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [projectName, setProjectName] = useState("Untitled Project");
   const [activeCodeTab, setActiveCodeTab] = useState("html");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+
+  const handleLogout = () => {
+    logout();
+    addToast("Signed out successfully", "success");
+    navigate("/login");
+  };
 
   const handleNewChat = useCallback(() => {
     setPrompt("");
@@ -241,14 +263,24 @@ export default function Builder() {
     }
   };
 
-  const handleDeleteHistory = async (item, e) => {
+  const handleDeleteHistory = (item, e) => {
     e.stopPropagation();
+    setItemToDelete(item);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
     try {
-      if (!confirm("Delete this saved generation?")) return;
-      await deleteHistory(item.id);
-      setHistoryData((prev) => prev.filter((h) => h.id !== item.id));
+      await deleteHistory(itemToDelete.id);
+      setHistoryData((prev) => prev.filter((h) => h.id !== itemToDelete.id));
+      addToast("Project deleted successfully", "success");
     } catch (err) {
       console.error("Failed to delete history", err);
+      addToast("Failed to delete project", "error");
+    } finally {
+      setDeleteConfirmOpen(false);
+      setItemToDelete(null);
     }
   };
 
@@ -284,7 +316,7 @@ export default function Builder() {
   ];
 
   const handleGenerate = async (promptText = prompt) => {
-    if (loading) return;
+    if (loading || isGeneratingRef.current) return;
     const trimmedPrompt = promptText.trim();
     if (!trimmedPrompt) {
       setError("Please enter a prompt");
@@ -295,13 +327,12 @@ export default function Builder() {
       setIsActive(true);
     }
 
+    isGeneratingRef.current = true;
     const timestamp = Date.now();
-    const pendingId = `assistant-pending-${timestamp}`;
 
     setChatMessages((prev) => [
       ...prev,
       { id: `user-${timestamp}`, role: "user", text: trimmedPrompt },
-      { id: pendingId, role: "assistant", text: "Generating your UI..." },
     ]);
     setPrompt("");
     setConsoleLogs([]); // Reset console logs for a new generation
@@ -332,28 +363,25 @@ export default function Builder() {
         setProjectName(trimmedPrompt.length > 30 ? trimmedPrompt.substring(0, 30) + "..." : trimmedPrompt);
       }
 
-      setChatMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === pendingId
-            ? { ...msg, text: "Done! You can preview the result or ask for changes." }
-            : msg
-        )
-      );
-      setLoading(false);
+      setChatMessages((prev) => [
+        ...prev,
+        { id: `assistant-${Date.now()}`, role: "assistant", text: "Done! You can preview the result or ask for changes." }
+      ]);
     } catch (err) {
       const errorMessage = err?.response?.data?.message || err?.message || "Failed to generate. Try again.";
       setError(errorMessage);
-      setChatMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === pendingId ? { ...msg, text: errorMessage } : msg
-        )
-      );
+      setChatMessages((prev) => [
+        ...prev,
+        { id: `assistant-${Date.now()}`, role: "assistant", text: errorMessage }
+      ]);
+    } finally {
+      isGeneratingRef.current = false;
       setLoading(false);
     }
   };
 
   const handleCenterSubmit = () => {
-    if (prompt.trim()) {
+    if (prompt.trim() && !loading) {
       handleGenerate();
     }
   };
@@ -361,7 +389,9 @@ export default function Builder() {
   const handleCenterKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleCenterSubmit();
+      if (!loading) {
+        handleCenterSubmit();
+      }
     }
   };
 
@@ -412,7 +442,9 @@ export default function Builder() {
   const handlePromptKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleGenerate();
+      if (!loading) {
+        handleGenerate();
+      }
     }
   };
 
@@ -551,274 +583,254 @@ export default function Builder() {
 
   return (
     <div className="builder-page">
-      {/* Top Navbar */}
-      <motion.nav
-        className="builder-topnav"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <div className="topnav-left">
-          <div className="topnav-logo" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
-            <span>Spark</span>
-          </div>
-        </div>
-        <div className="topnav-center">
-          <div className="topnav-project-name-wrapper">
-            <input
-              ref={projectNameInputRef}
-              type="text"
-              className="topnav-project-name"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              placeholder="Project name..."
-            />
-            <button
-              type="button"
-              className="project-name-edit-btn"
-              onClick={handleFocusProjectName}
-              title="Rename Project"
-            >
-              <Pencil size={12} className="project-name-edit-icon" />
-            </button>
-          </div>
-        </div>
-        <div className="topnav-right">
-          {generatedCode && (
-            <motion.button
-              className="topnav-btn"
-              onClick={handleExportHTML}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Download size={15} /> Export
-            </motion.button>
-          )}
-          
-          <motion.button
-            className="topnav-btn icon-only"
-            onClick={toggleTheme}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            title="Toggle Theme"
-          >
-            {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
-          </motion.button>
-
-          <motion.button
-            className="topnav-btn icon-only profile-avatar-nav-btn"
-            onClick={() => navigate("/profile")}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            title="My Profile"
-          >
-            {user?.avatar_url ? (
-              <img src={user.avatar_url} alt="Profile" className="nav-avatar-img" />
-            ) : user?.name ? (
-              <span className="nav-avatar-initial">{user.name.charAt(0).toUpperCase()}</span>
-            ) : (
-              <User size={16} />
-            )}
-          </motion.button>
-        </div>
-      </motion.nav>
-
-      {/* History Sidebar */}
-      <AnimatePresence>
-        {isHistoryOpen && (
-          <>
-            <motion.div
-              className="history-overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => setIsHistoryOpen(false)}
-            />
-            <motion.div
-              className="history-sidebar"
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            >
-              <div className="history-sidebar-head">
-                <div className="head-title">
-                  <Library size={18} />
-                  <h2>Library</h2>
-                </div>
-                <button className="icon-btn" onClick={() => setIsHistoryOpen(false)}>
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="history-sidebar-tabs">
-                <button
-                  className={`history-sidebar-tab ${libraryTab === "all" ? "active" : ""}`}
-                  onClick={() => setLibraryTab("all")}
-                >
-                  All
-                </button>
-                <button
-                  className={`history-sidebar-tab ${libraryTab === "liked" ? "active" : ""}`}
-                  onClick={() => setLibraryTab("liked")}
-                >
-                  Liked
-                </button>
-              </div>
-              <div className="history-sidebar-content">
-                {historyLoading ? (
-                  <div className="history-loading">
-                    <span className="spinner"></span>
-                  </div>
-                ) : (() => {
-                  const filtered = libraryTab === "all"
-                    ? historyData
-                    : historyData.filter((item) => item.is_favourite);
-
-                  if (!Array.isArray(filtered) || filtered.length === 0) {
-                    return (
-                      <div className="history-empty">
-                        {libraryTab === "all" ? (
-                          <>
-                            <History size={32} />
-                            <p>No saved projects yet.</p>
-                            <span>Generations will appear here.</span>
-                          </>
-                        ) : (
-                          <>
-                            <Heart size={32} />
-                            <p>No liked projects yet.</p>
-                            <span>Click the heart icon on any project to see it here.</span>
-                          </>
-                        )}
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div className="history-grid">
-                      {filtered.map((item, index) => (
-                        <motion.div
-                          key={item.id}
-                          className="history-card"
-                          onClick={() => handleLoadHistory(item)}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.05 }}
-                        >
-                          <div className="history-card-head">
-                            <span className="history-date">
-                              {new Date(item.created_at).toLocaleDateString(undefined, {
-                                month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-                              })}
-                            </span>
-                            <div className="history-actions">
-                              <button className="action-btn" onClick={(e) => handleToggleFavourite(item, e)}>
-                                <Heart size={14} className={item.is_favourite ? "filled" : ""} />
-                              </button>
-                              <button className="action-btn delete-btn" onClick={(e) => handleDeleteHistory(item, e)}>
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          </div>
-                          <p className="history-prompt">{item.prompt}</p>
-                        </motion.div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
       {/* Main Shell */}
       <motion.div
-        className={`builder-shell ${!isActive ? "is-empty" : "is-active"}`}
+        className={`builder-shell ${!isActive ? "is-empty" : "is-active"} ${isHistoryOpen ? "has-sidebar" : ""}`}
         ref={shellRef}
         style={{ "--builder-left-width": `${leftPaneWidth}%` }}
         variants={pageVariants}
         initial="initial"
         animate="animate"
       >
+        {/* Collapsible Left Library Sidebar */}
+        <aside className={`library-sidebar ${!isHistoryOpen ? "is-collapsed" : ""}`}>
+          <div className="library-sidebar-head">
+            <div className="head-title">
+              <Sparkles size={16} className="sparkles-icon" />
+              <h2>Library</h2>
+            </div>
+            <button 
+              className="icon-btn sidebar-toggle-close" 
+              onClick={() => setIsHistoryOpen(false)}
+              title="Close Sidebar"
+            >
+              <PanelLeftClose size={16} />
+            </button>
+          </div>
+
+          <div className="library-sidebar-actions">
+            <button className="library-new-btn liquid-glass" onClick={handleNewChat}>
+              <Plus size={14} />
+              <span>New Project</span>
+            </button>
+          </div>
+
+          {/* Search Bar */}
+          <div className="library-search-wrap">
+            <Search size={13} className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search history..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="library-search-input"
+            />
+            {searchQuery && (
+              <button className="search-clear-btn" onClick={() => setSearchQuery("")}>
+                <X size={10} />
+              </button>
+            )}
+          </div>
+
+          <div className="library-sidebar-tabs">
+            <button
+              className={`library-sidebar-tab ${libraryTab === "all" ? "active" : ""}`}
+              onClick={() => setLibraryTab("all")}
+            >
+              All
+            </button>
+            <button
+              className={`library-sidebar-tab ${libraryTab === "liked" ? "active" : ""}`}
+              onClick={() => setLibraryTab("liked")}
+            >
+              Liked
+            </button>
+          </div>
+
+          <div className="library-sidebar-content">
+            {historyLoading ? (
+              <div className="library-loading">
+                <span className="library-spinner-glow"></span>
+              </div>
+            ) : (() => {
+              const filtered = libraryTab === "all"
+                ? historyData
+                : historyData.filter((item) => item.is_favourite);
+
+              const filteredHistory = filtered.filter((item) =>
+                item.prompt.toLowerCase().includes(searchQuery.toLowerCase())
+              );
+
+              if (!Array.isArray(filteredHistory) || filteredHistory.length === 0) {
+                return (
+                  <div className="library-empty">
+                    {libraryTab === "all" ? (
+                      <>
+                        <History size={24} />
+                        <p>No saved projects.</p>
+                      </>
+                    ) : (
+                      <>
+                        <Heart size={24} />
+                        <p>No liked projects.</p>
+                      </>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <div className="library-list">
+                  {filteredHistory.map((item, index) => (
+                    <motion.div
+                      key={item.id}
+                      className="library-item"
+                      onClick={() => handleLoadHistory(item)}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.02 }}
+                    >
+                      <div className="library-item-content">
+                        <span className="library-item-prompt">{item.prompt}</span>
+                        <span className="library-item-date">
+                          {new Date(item.created_at).toLocaleDateString(undefined, {
+                            month: "short", day: "numeric"
+                          })}
+                        </span>
+                      </div>
+                      <div className="library-item-actions">
+                        <button className="action-btn" onClick={(e) => handleToggleFavourite(item, e)}>
+                          <Heart size={12} className={item.is_favourite ? "filled" : ""} />
+                        </button>
+                        <button className="action-btn delete-btn" onClick={(e) => handleDeleteHistory(item, e)}>
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Sidebar Profile Footer */}
+          <div className="library-sidebar-footer">
+            <div className="library-profile-info" onClick={() => navigate("/profile")}>
+              {user?.avatar_url ? (
+                <img src={user.avatar_url} alt="Profile" className="library-avatar-img" />
+              ) : user?.name ? (
+                <span className="library-avatar-initial">{user.name.charAt(0).toUpperCase()}</span>
+              ) : (
+                <div className="library-avatar-icon"><User size={13} /></div>
+              )}
+              <div className="library-profile-text">
+                <span className="library-profile-name">{user?.name || "Builder"}</span>
+                <span className="library-profile-email">{user?.email || "builder@spark.sh"}</span>
+              </div>
+            </div>
+            <button className="library-logout-btn icon-btn" onClick={handleLogout} title="Sign Out">
+              <LogOut size={14} />
+            </button>
+          </div>
+        </aside>
+
         {/* ===== INITIAL STATE: CENTERED CHAT ===== */}
         {!isActive && (
-          <motion.div
-            className="builder-center-chat"
-            variants={centerChatVariants}
-            initial="initial"
-            animate="animate"
-          >
-            <motion.div className="center-chat-header" variants={itemVariants}>
-              <motion.div
-                className="center-chat-logo"
-                whileHover={{
-                  scale: 1.05,
-                  boxShadow: theme === "dark"
-                    ? "0 10px 30px rgba(0, 0, 0, 0.4), 0 0 45px rgba(216, 161, 65, 0.15)"
-                    : "0 10px 30px rgba(185, 134, 48, 0.12), 0 0 45px var(--accent-soft)",
-                  borderColor: "var(--builder-accent)"
-                }}
-                transition={{ duration: 0.2 }}
+          <div className="builder-center-chat-container">
+            {!isHistoryOpen && (
+              <button 
+                className="floating-sidebar-toggle-btn icon-btn" 
+                onClick={() => setIsHistoryOpen(true)}
+                title="Open Sidebar"
               >
-                <Wand2 size={28} />
+                <PanelLeftOpen size={16} />
+              </button>
+            )}
+            <motion.div
+              className="builder-center-chat"
+              variants={centerChatVariants}
+              initial="initial"
+              animate="animate"
+            >
+              <motion.div className="center-chat-header" variants={itemVariants}>
+                <motion.div
+                  className="center-chat-logo"
+                  whileHover={{
+                    scale: 1.05,
+                    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.4), 0 0 45px rgba(255, 255, 255, 0.05)",
+                    borderColor: "var(--builder-border)"
+                  }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Wand2 size={28} />
+                </motion.div>
+                <motion.h1 className="center-chat-title" variants={itemVariants}>
+                  What will you build today?
+                </motion.h1>
+                <motion.p className="center-chat-subtitle" variants={itemVariants}>
+                  Create stunning UIs with AI.
+                </motion.p>
               </motion.div>
-              <motion.h1 className="center-chat-title" variants={itemVariants}>
-                What will you build today?
-              </motion.h1>
-              <motion.p className="center-chat-subtitle" variants={itemVariants}>
-                Create stunning UIs with AI.
-              </motion.p>
-            </motion.div>
 
-            <motion.div className="center-chat-input-wrap" variants={itemVariants}>
-              <motion.div
-                className="center-chat-input-container"
-                whileFocus={{ scale: 1.01 }}
-                transition={{ duration: 0.2 }}
-              >
-                <textarea
-                  ref={centerTextareaRef}
-                  value={prompt}
-                  onChange={handleCenterPromptChange}
-                  onKeyDown={handleCenterKeyDown}
-                  placeholder="A modern landing page with hero, features, and pricing sections..."
-                  className="center-chat-textarea"
-                />
-                <div className="center-chat-actions">
-                  <div className="center-chat-tools">
+              <motion.div className="center-chat-input-wrap" variants={itemVariants}>
+                <motion.div
+                  className="center-chat-input-container"
+                  whileFocus={{ scale: 1.01 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <textarea
+                    ref={centerTextareaRef}
+                    value={prompt}
+                    onChange={handleCenterPromptChange}
+                    onKeyDown={handleCenterKeyDown}
+                    placeholder="A modern landing page with hero, features, and pricing sections..."
+                    className="center-chat-textarea"
+                  />
+                  <div className="center-chat-actions">
+                    <div className="center-chat-tools">
+                    </div>
+                    <motion.button
+                      className={`center-chat-send ${prompt.trim() ? "has-text" : ""}`}
+                      onClick={handleCenterSubmit}
+                      disabled={loading || !prompt.trim()}
+                      animate={
+                        prompt.trim()
+                          ? {
+                              boxShadow: "0 0 0 3.5px rgba(255, 255, 255, 0.45), 0 0 16px rgba(255, 255, 255, 0.45)",
+                              scale: 1.02,
+                            }
+                          : {
+                              boxShadow: "0 0 0 0px rgba(255, 255, 255, 0), 0 4px 10px rgba(0, 0, 0, 0.15)",
+                              scale: 1,
+                            }
+                      }
+                      whileHover={!loading && prompt.trim() ? { scale: 1.08, boxShadow: "0 0 0 4.5px rgba(255, 255, 255, 0.55), 0 0 22px rgba(255, 255, 255, 0.55)" } : {}}
+                      whileTap={!loading && prompt.trim() ? { scale: 0.95 } : {}}
+                    >
+                      {loading ? <span className="center-chat-spinner" /> : <Send size={15} style={{ transform: "translate(0.5px, -0.5px)" }} />}
+                    </motion.button>
                   </div>
-                  <motion.button
-                    className="center-chat-send"
-                    onClick={handleCenterSubmit}
-                    disabled={loading || !prompt.trim()}
-                    whileHover={!loading && !prompt.trim() ? {} : { scale: 1.05 }}
-                    whileTap={!loading && !prompt.trim() ? {} : { scale: 0.95 }}
-                  >
-                    {loading ? <span className="center-chat-spinner" /> : <ArrowRight size={18} />}
-                  </motion.button>
-                </div>
-              </motion.div>
+                </motion.div>
 
-              <motion.div className="center-chat-ideas" variants={itemVariants}>
-                {promptIdeas.map((idea, index) => (
-                  <motion.button
-                    key={idea.label}
-                    className="center-chat-idea"
-                    onClick={() => setPrompt(idea.full)}
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 + index * 0.1 }}
-                  >
-                    {idea.label}
-                  </motion.button>
-                ))}
+                <motion.div className="center-chat-ideas" variants={itemVariants}>
+                  {promptIdeas.map((idea, index) => (
+                    <motion.button
+                      key={idea.label}
+                      className="center-chat-idea"
+                      onClick={() => setPrompt(idea.full)}
+                      whileHover={{ scale: 1.05, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 + index * 0.1 }}
+                    >
+                      {idea.label}
+                    </motion.button>
+                  ))}
+                </motion.div>
               </motion.div>
             </motion.div>
-          </motion.div>
+          </div>
         )}
 
         {/* ===== ACTIVE STATE: SPLIT VIEW ===== */}
@@ -837,8 +849,33 @@ export default function Builder() {
                 transition={{ delay: 0.1 }}
               >
                 <div className="builder-left-head-title-wrap">
-                  <span className="active-dot" />
-                  <p className="welcome-text">Welcome, {user?.name || "Builder"}</p>
+                  {!isHistoryOpen && (
+                    <button 
+                      className="sidebar-toggle-open-btn icon-btn" 
+                      onClick={() => setIsHistoryOpen(true)}
+                      title="Open Sidebar"
+                    >
+                      <PanelLeftOpen size={15} />
+                    </button>
+                  )}
+                  <div className="builder-project-name-wrapper">
+                    <input
+                      ref={projectNameInputRef}
+                      type="text"
+                      className="builder-project-name"
+                      value={projectName}
+                      onChange={(e) => setProjectName(e.target.value)}
+                      placeholder="Project name..."
+                    />
+                    <button
+                      type="button"
+                      className="project-name-edit-btn"
+                      onClick={handleFocusProjectName}
+                      title="Rename Project"
+                    >
+                      <Pencil size={11} className="project-name-edit-icon" />
+                    </button>
+                  </div>
                 </div>
                 <div style={{ display: "flex", gap: "0.45rem" }}>
                   <motion.button
@@ -931,23 +968,25 @@ export default function Builder() {
                   <div className="builder-compose-actions">
                     <div />
                     <div className="builder-compose-submit">
-                      {generatedCode && (
-                        <motion.button
-                          className="builder-clear-link"
-                          onClick={handleNewChat}
-                          whileHover={{ color: "#d8a141" }}
-                        >
-                          Clear
-                        </motion.button>
-                      )}
                       <motion.button
-                        className="builder-send-btn"
+                        className={`builder-send-btn ${prompt.trim() ? "has-text" : ""}`}
                         onClick={() => handleGenerate()}
-                        disabled={loading}
-                        whileHover={!loading ? { scale: 1.05 } : {}}
-                        whileTap={!loading ? { scale: 0.95 } : {}}
+                        disabled={loading || !prompt.trim()}
+                        animate={
+                          prompt.trim()
+                            ? {
+                                boxShadow: "0 0 0 3px rgba(255, 255, 255, 0.45), 0 0 12px rgba(255, 255, 255, 0.45)",
+                                scale: 1.02,
+                              }
+                            : {
+                                boxShadow: "0 0 0 0px rgba(255, 255, 255, 0), 0 4px 8px rgba(0, 0, 0, 0.15)",
+                                scale: 1,
+                              }
+                        }
+                        whileHover={!loading && prompt.trim() ? { scale: 1.08, boxShadow: "0 0 0 4px rgba(255, 255, 255, 0.55), 0 0 18px rgba(255, 255, 255, 0.55)" } : {}}
+                        whileTap={!loading && prompt.trim() ? { scale: 0.95 } : {}}
                       >
-                        {loading ? <span className="builder-spinner" /> : <ArrowRight size={16} />}
+                        {loading ? <span className="builder-spinner" /> : <Send size={13} style={{ transform: "translate(0.5px, -0.5px)" }} />}
                       </motion.button>
                     </div>
                   </div>
@@ -1196,6 +1235,46 @@ export default function Builder() {
           </>
         )}
       </motion.div>
+
+      {/* Custom Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirmOpen && (
+          <div className="modal-overlay">
+            <motion.div 
+              className="modal-card"
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <div className="modal-head">
+                <Trash2 size={20} className="modal-danger-icon" />
+                <h3>Delete Project</h3>
+              </div>
+              <div className="modal-body">
+                <p>Are you sure you want to delete this project? This action cannot be undone.</p>
+              </div>
+              <div className="modal-actions">
+                <button 
+                  className="modal-btn secondary" 
+                  onClick={() => {
+                    setDeleteConfirmOpen(false);
+                    setItemToDelete(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="modal-btn danger" 
+                  onClick={handleConfirmDelete}
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

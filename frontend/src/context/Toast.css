@@ -30,21 +30,21 @@
 
 /* Success Toast */
 .toast-item.success {
-  background: rgba(19, 17, 14, 0.85);
-  border: 1px solid rgba(216, 161, 65, 0.35);
-  color: #f4ece0;
+  background: rgba(11, 24, 17, 0.85);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #ecfdf5;
 }
 
 .toast-item.success .toast-icon {
-  color: #d8a141;
+  color: #10b981;
 }
 
 .toast-item.success .toast-close-btn {
-  color: #a69885;
+  color: #a7f3d0;
 }
 
 .toast-item.success .toast-close-btn:hover {
-  color: #f4ece0;
+  color: #ecfdf5;
 }
 
 /* Error Toast */

@@ -161,8 +161,8 @@ function StatsCards({ stats, loading }) {
       label: "Total Generations",
       value: stats?.totalGenerations ?? 0,
       icon: Zap,
-      color: "#d8a141",
-      bg: "rgba(216,161,65,0.1)",
+      color: "#ffffff",
+      bg: "rgba(255, 255, 255, 0.08)",
     },
     {
       label: "Projects",
@@ -505,9 +505,56 @@ function EmptyState({ icon: Icon, title, description, action }) {
 
 // ─── Tab Panels ─────────────────────────────────────────────────────────────
 
-// ─── Tab Panels ─────────────────────────────────────────────────────────────
+function ActivityChart({ data }) {
+  const maxCount = Math.max(...data.map(d => d.count), 1);
+  
+  return (
+    <div className="profile-chart-card">
+      <div className="profile-chart-head">
+        <div>
+          <h3>Generation Velocity</h3>
+          <p className="section-subtitle" style={{ margin: 0 }}>Weekly UI building frequency</p>
+        </div>
+        <div className="profile-chart-summary">
+          <span className="summary-value">{data.reduce((acc, d) => acc + d.count, 0)}</span>
+          <span className="summary-label">this week</span>
+        </div>
+      </div>
+      
+      <div className="profile-chart-body">
+        <div className="chart-y-axis">
+          <span>{maxCount}</span>
+          <span>{Math.round(maxCount / 2)}</span>
+          <span>0</span>
+        </div>
+        
+        <div className="chart-grid">
+          {data.map((day, idx) => {
+            const heightPercent = (day.count / maxCount) * 100;
+            return (
+              <div key={idx} className="chart-col">
+                <div className="chart-bar-wrap">
+                  <motion.div 
+                    className="chart-bar"
+                    initial={{ height: 0 }}
+                    animate={{ height: `${Math.max(heightPercent, 4)}%` }}
+                    transition={{ duration: 0.8, delay: idx * 0.05, ease: "easeOut" }}
+                  />
+                  {day.count > 0 && (
+                    <span className="chart-bar-tooltip">{day.count} UI{day.count > 1 ? 's' : ''}</span>
+                  )}
+                </div>
+                <span className="chart-col-label">{day.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-function OverviewTab({ recentItems, onLoadItem, onNewProject }) {
+function OverviewTab({ recentItems, onLoadItem, onNewProject, activityData }) {
   return (
     <motion.div
       className="profile-tab-panel"
@@ -516,19 +563,8 @@ function OverviewTab({ recentItems, onLoadItem, onNewProject }) {
       initial="initial"
       animate="animate"
     >
-      <div className="profile-welcome-card">
-        <div className="profile-welcome-glow" />
-        <div className="profile-welcome-content">
-          <div className="profile-welcome-text">
-            <h3>Create stunning UIs with AI</h3>
-            <p>Build responsive components, dashboard layouts, landing pages, and interactive prototypes instantly with Gemini.</p>
-          </div>
-          <button className="profile-welcome-cta" onClick={onNewProject}>
-            <Sparkles size={14} />
-            <span>Start Building</span>
-          </button>
-        </div>
-      </div>
+      <ActivityChart data={activityData} />
+
 
       <div className="profile-section-head" style={{ marginTop: "1rem" }}>
         <h2>
@@ -923,6 +959,7 @@ function SettingsTab({ user, updateUser }) {
 // ─── Profile Header ─────────────────────────────────────────────────────────
 
 function ProfileHeader({ user }) {
+  const navigate = useNavigate();
   const joinDate = user?.created_at
     ? new Date(user.created_at).toLocaleDateString(undefined, {
         month: "long",
@@ -939,16 +976,16 @@ function ProfileHeader({ user }) {
     >
       <div className="profile-header-top-row">
         <motion.button
-          className="profile-sidebar-back-btn"
-          onClick={() => window.history.back()}
-          whileHover={{ scale: 1.05, x: -2 }}
+          className="profile-back-icon-btn"
+          onClick={() => navigate("/builder")}
+          whileHover={{ scale: 1.08, x: -2 }}
           whileTap={{ scale: 0.95 }}
-          title="Go Back"
+          title="Back to Builder"
         >
-          <ArrowLeft size={14} />
-          <span>Back</span>
+          <ArrowLeft size={18} />
         </motion.button>
       </div>
+
 
       <motion.div
         className="profile-avatar-wrap"
@@ -991,12 +1028,21 @@ export default function Profile() {
   const navigate = useNavigate();
   const { user, updateUser, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { addToast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const [viewMode, setViewMode] = useState("grid");
   const [stats, setStats] = useState(null);
   const [generations, setGenerations] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingGen, setLoadingGen] = useState(true);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+
+  useEffect(() => {
+    if (theme !== "dark" && typeof toggleTheme === "function") {
+      toggleTheme();
+    }
+  }, [theme, toggleTheme]);
 
   // Fetch stats
   useEffect(() => {
@@ -1019,22 +1065,32 @@ export default function Profile() {
     navigate(`/builder/${item.share_id}`);
   };
 
-  const handleDelete = async (item) => {
-    if (!confirm("Delete this generation? This cannot be undone.")) return;
+  const handleDelete = (item) => {
+    setItemToDelete(item);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return;
     try {
-      await deleteHistory(item.id);
-      setGenerations((prev) => prev.filter((g) => g.id !== item.id));
+      await deleteHistory(itemToDelete.id);
+      setGenerations((prev) => prev.filter((g) => g.id !== itemToDelete.id));
       if (stats) {
         setStats((s) => ({
           ...s,
           totalGenerations: Math.max(0, s.totalGenerations - 1),
-          favorites: item.is_favourite
+          favorites: itemToDelete.is_favourite
             ? Math.max(0, s.favorites - 1)
             : s.favorites,
         }));
       }
+      addToast("Project deleted successfully", "success");
     } catch (err) {
       console.error("Delete failed:", err);
+      addToast("Failed to delete project", "error");
+    } finally {
+      setDeleteConfirmOpen(false);
+      setItemToDelete(null);
     }
   };
 
@@ -1081,6 +1137,30 @@ export default function Profile() {
 
   const recentItems = generations.slice(0, 10);
 
+  // Calculate activity data for last 7 days
+  const activityData = (() => {
+    const data = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(now.getDate() - i);
+      const label = d.toLocaleDateString(undefined, { weekday: "short" });
+      const dateStr = d.toDateString();
+      data.push({ label, dateStr, count: 0 });
+    }
+
+    generations.forEach((g) => {
+      if (!g.created_at) return;
+      const gDate = new Date(g.created_at).toDateString();
+      const match = data.find((d) => d.dateStr === gDate);
+      if (match) {
+        match.count += 1;
+      }
+    });
+
+    return data;
+  })();
+
   return (
     <motion.div
       className="profile-page"
@@ -1089,31 +1169,7 @@ export default function Profile() {
       animate="animate"
       exit="exit"
     >
-      {/* Page Nav */}
-      <motion.nav
-        className="profile-nav"
-        initial={{ opacity: 0, y: -16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <div className="profile-nav-left">
-          <div className="profile-nav-logo">
-            <span>Spark</span>
-          </div>
-        </div>
-        <div className="profile-nav-center" />
-        <div className="profile-nav-right">
-          <motion.button
-            className="profile-nav-btn icon-only"
-            onClick={toggleTheme}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            title="Toggle Theme"
-          >
-            {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-          </motion.button>
-        </div>
-      </motion.nav>
+
 
       <div className="profile-content">
         {/* Sidebar / Header Area */}
@@ -1148,6 +1204,7 @@ export default function Profile() {
                 recentItems={recentItems}
                 onLoadItem={handleLoadItem}
                 onNewProject={handleNewProject}
+                activityData={activityData}
               />
             )}
 
@@ -1190,6 +1247,46 @@ export default function Profile() {
           </AnimatePresence>
         </main>
       </div>
+
+      {/* Custom Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirmOpen && (
+          <div className="modal-overlay">
+            <motion.div 
+              className="modal-card"
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <div className="modal-head">
+                <Trash2 size={20} className="modal-danger-icon" />
+                <h3>Delete Project</h3>
+              </div>
+              <div className="modal-body">
+                <p>Are you sure you want to delete this project? This action cannot be undone.</p>
+              </div>
+              <div className="modal-actions">
+                <button 
+                  className="modal-btn secondary" 
+                  onClick={() => {
+                    setDeleteConfirmOpen(false);
+                    setItemToDelete(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="modal-btn danger" 
+                  onClick={handleConfirmDelete}
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
