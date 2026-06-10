@@ -77,7 +77,7 @@
 /* Auth Card Shell */
 .auth-shell {
   width: min(1040px, 100%);
-  min-height: 640px;
+  min-height: 600px;
   background: rgba(255, 255, 255, 0.015);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
@@ -500,7 +500,7 @@
 .auth-video-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(11, 15, 25, 0.78);
+  background: rgba(11, 15, 25, 0.65); /* Constrain brightness for validation readability */
   z-index: 0;
   pointer-events: none;
 }
