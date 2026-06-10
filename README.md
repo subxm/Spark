@@ -20,7 +20,7 @@ Generate polished interfaces from natural language, preview instantly, and refin
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vite.dev)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 
-[Features](#-features) · [Tech Stack](#-tech-stack) · [Getting Started](#-getting-started) · [Project Structure](#-project-structure) · [API Reference](#-api-reference) · [Environment Variables](#-environment-variables)
+[Features](#-features) · [Tech Stack](#-tech-stack) · [Application Flow](#-application-process--user-flow) · [Database Schema](#-database-schema) · [API Reference](#-api-reference) · [Environment Variables](#-environment-variables)
 
 </div>
 
@@ -28,15 +28,7 @@ Generate polished interfaces from natural language, preview instantly, and refin
 
 ## ✨ Features
 
-- **Prompt-to-Code Generation** - Send natural language prompts and get full HTML documents with structured CSS and optional JS.
-- **Chat-Style Iteration** - Refine output with follow-up prompts in a conversational builder panel.
-- **Live Preview + Code View** - Switch between rendered output and source code instantly.
-- **Library Sidebar** - Accessible drawer to scroll through and instantly load your saved generation history.
-- **Resizable Workspace** - Drag-adjustable split layout between prompt/chat and output pane.
-- **Copy-Ready Output** - One-click code copy for quick export and reuse.
-- **Secure JWT Auth** - Register/login flow with protected generation routes.
-- **Persistent Generation Records** - Generated outputs are stored securely in PostgreSQL per user.
-- **Polished Landing + Auth UX** - Marketing landing, themed login/register pages, and protected route gating.
+Spark lets you describe any UI in plain English and instantly generates a fully functional HTML/CSS/JS interface. Refine your designs through a conversational chat-style builder, toggle between a live interactive preview and raw source code, and manage all your past generations from a scrollable library sidebar — all behind a secure JWT-authenticated workflow with persistent PostgreSQL storage.
 
 ---
 
@@ -72,130 +64,81 @@ Generate polished interfaces from natural language, preview instantly, and refin
 
 ---
 
-## 🚀 Getting Started
+## 🧭 Application Process & User Flow
 
-### Prerequisites
+### 1. Process Architecture Flow
 
-Make sure you have:
+```mermaid
+flowchart TD
+    subgraph Client ["Frontend - React + Vite"]
+        A[Landing Page] --> B{Authenticated?}
+        B -- No --> C[Login / Register Pages]
+        C -->|Save JWT| D[Builder Workspace]
+        B -- Yes --> D
+        D -->|Submit Prompt| E[Prompt Input Panel]
+        D -->|Render iframe| F[Live Interactive Preview]
+        D -->|View Source Code| G[Code Editor View]
+        D -->|Select History| H[Library Sidebar]
+    end
 
-- **Node.js** v18 or higher
-- **PostgreSQL** (local or hosted)
-- **Git**
-- A valid **Gemini API key**
+    subgraph Server ["Backend - Express + Node.js"]
+        E -->|POST /api/generate| I[Auth Middleware]
+        I -->|Valid JWT| J[Generation Controller]
+        H -->|GET /api/history| K[History Controller]
+    end
 
-### 1. Clone the Repository
+    subgraph External ["External Services"]
+        J -->|Request UI Generation| L[Gemini API]
+        L -->|Return Clean HTML| J
+        J -->|Save Record| M[("PostgreSQL")]
+        K -->|Fetch Records| M
+    end
 
-```bash
-git clone https://github.com/subxm/Spark.git
-cd Spark
+    style Client fill:#1f1f2e,stroke:#4a4a6a,stroke-width:2px,color:#fff
+    style Server fill:#1a2332,stroke:#3b5998,stroke-width:2px,color:#fff
+    style External fill:#16241d,stroke:#2e7d32,stroke-width:2px,color:#fff
 ```
 
-### 2. Set Up the Database
+### 2. Prompt-to-Code Generation Lifecycle
 
-Run the SQL schema:
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant Frontend as React Client
+    participant Backend as Express Server
+    participant DB as PostgreSQL
+    participant LLM as Google Gemini API
 
-```bash
-# Example with psql
-psql "your_postgres_connection_string" -f schema/schema.sql
+    User->>Frontend: Enters prompt & clicks generate
+    Frontend->>Backend: POST /api/generate (with JWT & prompt)
+    Note over Backend: authMiddleware validates JWT
+    Backend->>LLM: Requests HTML code for prompt
+    LLM-->>Backend: Returns generated HTML/CSS/JS
+    Backend->>DB: INSERT into generations (user_id, prompt, generated_code, share_id)
+    DB-->>Backend: Returns inserted row
+    Backend-->>Frontend: Returns generation object (JSON)
+    Frontend->>Frontend: Renders HTML dynamically inside sandboxed iframe
 ```
 
-This creates:
-
-- `users`
-- `generations`
-- `idx_generations_user`
-
-### 3. Configure the Backend
-
-```bash
-cd backend
-npm install
-```
-
-Create `backend/.env`:
-
-```env
-PORT=5000
-FRONTEND_URL=http://localhost:5173
-DATABASE_URL=postgresql://username:password@host:5432/database
-JWT_SECRET=your_jwt_secret
-GEMINI_API_KEY=your_gemini_api_key
-```
-
-Run backend:
-
-```bash
-npm run dev
-# or
-npm start
-```
-
-### 4. Configure the Frontend
-
-Open a second terminal:
-
-```bash
-cd frontend
-npm install
-```
-
-Create `frontend/.env` (optional but recommended):
-
-```env
-VITE_API_URL=http://localhost:5000
-```
-
-Run frontend:
-
-```bash
-npm run dev
-```
-
-Visit: **http://localhost:5173**
+### 3. Step-by-Step User Actions
+1. **Discover** — Land on the marketing homepage.
+2. **Authenticate** — Register or log in to access the builder.
+3. **Prompt** — Enter a design idea into the input field.
+4. **Generate** — The backend queries Gemini, saves the result to PostgreSQL, and issues a unique share link.
+5. **Preview** — View the rendered output in a sandboxed iframe or inspect the raw source code.
+6. **Iterate** — Send follow-up prompts to refine the current layout.
+7. **Manage** — Browse the library sidebar to star favorites, delete old builds, or reload past generations.
 
 ---
 
-## 📁 Project Structure
+## 🔐 Authentication Flow
 
-```text
-Spark/
-│
-├── backend/                       # Express API server
-│   ├── config/
-│   │   └── db.js                  # PostgreSQL pool (SSL enabled)
-│   ├── controllers/
-│   │   └── authController.js      # Register and login handlers
-│   ├── middleware/
-│   │   └── authMiddleware.js      # JWT verification middleware
-│   ├── routes/
-│   │   ├── authRoutes.js          # /api/auth/*
-│   │   ├── generateRoutes.js      # /api/generate
-│   │   └── historyRoutes.js       # /api/history
-│   ├── package.json
-│   └── server.js                  # App entry point + route mounting
-│
-├── frontend/                      # React client app
-│   ├── src/
-│   │   ├── components/
-│   │   │   └── FormInput.jsx
-│   │   ├── context/
-│   │   │   └── AuthContext.jsx    # Auth state + token persistence
-│   │   ├── pages/
-│   │   │   ├── Landing.jsx
-│   │   │   ├── Login.jsx
-│   │   │   ├── Register.jsx
-│   │   │   └── Builder.jsx        # Prompt/chat + preview workspace
-│   │   ├── services/
-│   │   │   └── api.js             # Axios instance + API helpers
-│   │   ├── App.jsx                # Routes + ProtectedRoute
-│   │   └── main.jsx
-│   ├── package.json
-│   └── vercel.json                # Vercel SPA routing
-│
-├── schema/
-│   └── schema.sql                 # PostgreSQL schema
-└── README.md
-```
+1. User registers or logs in through `/api/auth/*`.
+2. Backend returns a JWT (24h expiry).
+3. Frontend stores token in localStorage.
+4. Axios interceptor attaches `Authorization: Bearer <token>` to API calls.
+5. Protected routes validate token through middleware.
 
 ---
 
@@ -283,86 +226,6 @@ Base URL: `http://localhost:5000`
 
 ---
 
-## 🔐 Authentication Flow
-
-1. User registers or logs in through `/api/auth/*`.
-2. Backend returns a JWT (24h expiry).
-3. Frontend stores token in localStorage.
-4. Axios interceptor attaches `Authorization: Bearer <token>` to API calls.
-5. Protected routes validate token through middleware.
-
----
-
-## 🧭 Application Process & User Flow
-
-### 1. Process Architecture Flow
-This diagram illustrates the high-level routing, token validations, external Gemini inference, and frontend dynamic preview sandbox.
-
-```mermaid
-flowchart TD
-    subgraph Client ["Frontend (React + Vite)"]
-        A[Landing Page] --> B{Authenticated?}
-        B -- No --> C[Login / Register Pages]
-        C -->|Success: Save JWT| D[Builder Workspace]
-        B -- Yes --> D
-        D -->|1. Submit Prompt| E[Prompt Input Panel]
-        D -->|4. Render iframe| F[Live Interactive Preview]
-        D -->|5. View Source Code| G[Monaco/Code Editor View]
-        D -->|6. Select History| H[Library Sidebar]
-    end
-
-    subgraph Server ["Backend (Express + Node.js)"]
-        E -->|POST /api/generate with JWT| I[Auth Middleware]
-        I -->|Valid JWT| J[Generation Controller]
-        H -->|GET /api/history| K[History Controller]
-    end
-
-    subgraph External ["External Services / DB"]
-        J -->|2. Request UI Generation| L[Gemini API]
-        L -->|3. Return Clean HTML| J
-        J -->|Save Record| M[("Supabase Postgres")]
-        K -->|Fetch User Records| M
-    end
-
-    style Client fill:#1f1f2e,stroke:#4a4a6a,stroke-width:2px,color:#fff
-    style Server fill:#1a2332,stroke:#3b5998,stroke-width:2px,color:#fff
-    style External fill:#16241d,stroke:#2e7d32,stroke-width:2px,color:#fff
-```
-
-### 2. Prompt-to-Code Generation Lifecycle
-A sequence diagram showcasing the step-by-step token validation, generation, and dynamic rendering.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant Frontend as React Client
-    participant Backend as Express Server
-    participant DB as PostgreSQL
-    participant LLM as Google Gemini API
-
-    User->>Frontend: Enters prompt & clicks generate
-    Frontend->>Backend: POST /api/generate (with JWT & prompt)
-    Note over Backend: authMiddleware validates JWT
-    Backend->>LLM: Requests HTML code for prompt
-    LLM-->>Backend: Returns generated HTML/CSS/JS
-    Backend->>DB: INSERT into generations (user_id, prompt, generated_code, share_id)
-    DB-->>Backend: Returns inserted row
-    Backend-->>Frontend: Returns generation object (JSON)
-    Frontend->>Frontend: Renders HTML dynamically inside sandboxed iframe
-```
-
-### 3. Step-by-Step User Actions
-1. **Discover**: Land on the marketing homepage.
-2. **Access Control**: Register or log in to generate and save designs (JWT stored securely in `localStorage`).
-3. **Prompting**: Enter a feature request or design idea into the dynamic input field.
-4. **Generation**: The backend queries the Gemini model, streams/saves the result to PostgreSQL, and issues a unique `share_id` link slug.
-5. **Dynamic Preview**: Render the sandbox iframe side-by-side with the live raw code editor tab.
-6. **Iterate**: Submit refining requests (e.g. "make the button larger", "change color palette") in the chat-style sidebar to refine the current layout.
-7. **History / Star**: Browse the scrollable Library history sidebar to toggle favorites, delete obsolete builds, or reload old generation variants.
-
----
-
 ## 🔒 Environment Variables
 
 ### `backend/.env`
@@ -403,50 +266,6 @@ sequenceDiagram
 
 ---
 
-## 🚢 Deployment
-
-### Suggested Stack
-
-| Layer    | Service                  |
-| -------- | ------------------------ |
-| Frontend | Vercel / Netlify         |
-| Backend  | Railway / Render         |
-| Database | Supabase Postgres / Neon |
-
-### Deploy Checklist
-
-1. Deploy backend first and configure all backend env vars.
-2. Set `FRONTEND_URL` to your deployed frontend domain.
-3. Deploy frontend and set `VITE_API_URL` to backend public URL. _(Note: `vercel.json` already includes the SPA rewrite logic)._
-4. Verify auth + generation end-to-end with production URLs.
-
----
-
-## 🛣 Roadmap
-
-- [x] Prompt-based UI generation with live preview
-- [x] Chat-style iterative builder UX
-- [x] Full history retrieval API + frontend history page
-- [x] Favorite toggling and deletion endpoints
-- [ ] Better multi-turn context memory between prompts
-- [ ] One-click deploy/export flows
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome.
-
-```bash
-git checkout -b feature/your-feature
-git commit -m "feat: add your feature"
-git push origin feature/your-feature
-```
-
-Open a Pull Request and include a clear description with screenshots for UI updates.
-
----
-
 ## 📄 License
 
 No license file has been added yet. Add a `LICENSE` file before open-source distribution.
@@ -457,6 +276,6 @@ No license file has been added yet. Add a `LICENSE` file before open-source dist
 
 Built by [subxm](https://github.com/subxm)
 
-If Spark helped you, consider starring the repo.
+If Spark helped you, consider starring the repo ⭐
 
 </div>
