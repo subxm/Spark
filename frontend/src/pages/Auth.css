@@ -77,7 +77,7 @@
 /* Auth Card Shell */
 .auth-shell {
   width: min(1040px, 100%);
-  min-height: 600px;
+  min-height: 680px;
   background: rgba(255, 255, 255, 0.015);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
@@ -503,4 +503,9 @@
   background: rgba(11, 15, 25, 0.65); /* Constrain brightness for validation readability */
   z-index: 0;
   pointer-events: none;
+}
+
+/* Slightly dim the background video overlay on Login page to match Register page's visual weight */
+.auth-page--login .auth-video-overlay {
+  background: rgba(11, 15, 25, 0.73);
 }

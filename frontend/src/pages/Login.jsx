@@ -106,7 +106,7 @@ export default function Login() {
   ];
 
   return (
-    <div className="auth-page">
+    <div className="auth-page auth-page--login">
       {/* Background Video */}
       <video
         autoPlay
