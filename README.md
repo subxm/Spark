@@ -201,20 +201,52 @@ Spark/
 
 ## 🗄 Database Schema
 
-```text
-users (1) ----------- (N) generations
+```mermaid
+erDiagram
+    users {
+        int id PK
+        varchar name
+        varchar email UK
+        varchar password
+        text avatar_url
+        timestamp created_at
+    }
+    generations {
+        int id PK
+        int user_id FK
+        text prompt
+        text generated_code
+        boolean is_favourite
+        varchar share_id UK
+        timestamp created_at
+    }
+    users ||--o{ generations : "owns"
 ```
 
-| Table         | Description                                                            |
-| ------------- | ---------------------------------------------------------------------- |
-| `users`       | Stores account identity, email, hashed password, timestamps            |
-| `generations` | Stores prompt, generated code, favorite state, owner, and created date |
+### Table Structure
 
-Key details:
+#### `users` Table
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `SERIAL` | `PRIMARY KEY` | Unique identifier for the user |
+| `name` | `VARCHAR(100)` | `NOT NULL` | Full name of the user |
+| `email` | `VARCHAR(150)` | `NOT NULL, UNIQUE` | Unique email for authentication |
+| `password` | `VARCHAR(255)` | `NOT NULL` | Hashed password of the user |
+| `avatar_url` | `TEXT` | `NULL` | Optional URL of the user's avatar image |
+| `created_at` | `TIMESTAMP` | `NOT NULL, DEFAULT NOW()` | Date and time of user registration |
 
-- `generations.user_id` is a foreign key to `users.id` with `ON DELETE CASCADE`
-- `is_favourite` defaults to `false`
-- `idx_generations_user` accelerates per-user history lookups
+#### `generations` Table
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `SERIAL` | `PRIMARY KEY` | Unique identifier for the generation |
+| `user_id` | `INT` | `NOT NULL, REFERENCES users(id) ON DELETE CASCADE` | Foreign key referencing the owner of the generation |
+| `prompt` | `TEXT` | `NOT NULL` | The input prompt sent by the user |
+| `generated_code` | `TEXT` | `NOT NULL` | The generated HTML/CSS/JS source code |
+| `is_favourite` | `BOOLEAN` | `NOT NULL, DEFAULT FALSE` | Flag indicating if the generation is starred/favorited |
+| `share_id` | `VARCHAR(50)` | `UNIQUE` | Unique random slug for share links |
+| `created_at` | `TIMESTAMP` | `NOT NULL, DEFAULT NOW()` | Date and time when the UI code was generated |
+
+- **Index**: `idx_generations_user` on `generations(user_id)` for high-performance retrieval of user generation logs.
 
 ---
 
@@ -261,15 +293,73 @@ Base URL: `http://localhost:5000`
 
 ---
 
-## 🧭 User Flow
+## 🧭 Application Process & User Flow
 
-1. Open landing page.
-2. Sign up or log in.
-3. Enter a UI prompt in Builder.
-4. Backend calls Gemini and returns generated document code.
-5. Preview inside iframe or inspect raw code tab.
-6. Open Library sidebar to browse or load past iterations.
-7. Continue refining through chat-style iterations.
+### 1. Process Architecture Flow
+This diagram illustrates the high-level routing, token validations, external Gemini inference, and frontend dynamic preview sandbox.
+
+```mermaid
+flowchart TD
+    subgraph Client [Frontend (React + Vite)]
+        A[Landing Page] --> B{Authenticated?}
+        B -- No --> C[Login / Register Pages]
+        C -->|Success: Save JWT| D[Builder Workspace]
+        B -- Yes --> D
+        D -->|1. Submit Prompt| E[Prompt Input Panel]
+        D -->|4. Render iframe| F[Live Interactive Preview]
+        D -->|5. View Source Code| G[Monaco/Code Editor View]
+        D -->|6. Select History| H[Library Sidebar]
+    end
+
+    subgraph Server [Backend (Express + Node.js)]
+        E -->|POST /api/generate with JWT| I[Auth Middleware]
+        I -->|Valid JWT| J[Generation Controller]
+        H -->|GET /api/history| K[History Controller]
+    end
+
+    subgraph External [External Services / DB]
+        J -->|2. Request UI Generation| L[Gemini API]
+        L -->|3. Return Clean HTML| J
+        J -->|Save Record| M[(Supabase Postgres)]
+        K -->|Fetch User Records| M
+    end
+
+    style Client fill:#1f1f2e,stroke:#4a4a6a,stroke-width:2px,color:#fff
+    style Server fill:#1a2332,stroke:#3b5998,stroke-width:2px,color:#fff
+    style External fill:#16241d,stroke:#2e7d32,stroke-width:2px,color:#fff
+```
+
+### 2. Prompt-to-Code Generation Lifecycle
+A sequence diagram showcasing the step-by-step token validation, generation, and dynamic rendering.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant Frontend as React Client
+    participant Backend as Express Server
+    participant DB as PostgreSQL
+    participant LLM as Google Gemini API
+
+    User->>Frontend: Enters prompt & clicks generate
+    Frontend->>Backend: POST /api/generate (with JWT & prompt)
+    Note over Backend: authMiddleware validates JWT
+    Backend->>LLM: Requests HTML code for prompt
+    LLM-->>Backend: Returns generated HTML/CSS/JS
+    Backend->>DB: INSERT into generations (user_id, prompt, generated_code, share_id)
+    DB-->>Backend: Returns inserted row
+    Backend-->>Frontend: Returns generation object (JSON)
+    Frontend->>Frontend: Renders HTML dynamically inside sandboxed iframe
+```
+
+### 3. Step-by-Step User Actions
+1. **Discover**: Land on the marketing homepage.
+2. **Access Control**: Register or log in to generate and save designs (JWT stored securely in `localStorage`).
+3. **Prompting**: Enter a feature request or design idea into the dynamic input field.
+4. **Generation**: The backend queries the Gemini model, streams/saves the result to PostgreSQL, and issues a unique `share_id` link slug.
+5. **Dynamic Preview**: Render the sandbox iframe side-by-side with the live raw code editor tab.
+6. **Iterate**: Submit refining requests (e.g. "make the button larger", "change color palette") in the chat-style sidebar to refine the current layout.
+7. **History / Star**: Browse the scrollable Library history sidebar to toggle favorites, delete obsolete builds, or reload old generation variants.
 
 ---
 
