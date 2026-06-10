@@ -113,6 +113,7 @@ export default function Login() {
         loop
         muted
         playsInline
+        crossOrigin="anonymous"
         className="auth-bg-video"
       >
         <source

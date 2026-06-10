@@ -249,6 +249,7 @@ export default function Landing() {
             loop
             muted
             playsInline
+            crossOrigin="anonymous"
             className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
           >
             <source

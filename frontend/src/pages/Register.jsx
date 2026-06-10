@@ -121,6 +121,7 @@ export default function Register() {
         loop
         muted
         playsInline
+        crossOrigin="anonymous"
         className="auth-bg-video"
       >
         <source
