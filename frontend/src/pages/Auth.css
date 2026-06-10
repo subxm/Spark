@@ -507,5 +507,5 @@
 
 /* Slightly dim the background video overlay on Login page to match Register page's visual weight */
 .auth-page--login .auth-video-overlay {
-  background: rgba(11, 15, 25, 0.73);
+  background: rgba(11, 15, 25, 0.80);
 }
