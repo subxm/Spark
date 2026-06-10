@@ -300,7 +300,7 @@ This diagram illustrates the high-level routing, token validations, external Gem
 
 ```mermaid
 flowchart TD
-    subgraph Client [Frontend (React + Vite)]
+    subgraph Client ["Frontend (React + Vite)"]
         A[Landing Page] --> B{Authenticated?}
         B -- No --> C[Login / Register Pages]
         C -->|Success: Save JWT| D[Builder Workspace]
@@ -311,16 +311,16 @@ flowchart TD
         D -->|6. Select History| H[Library Sidebar]
     end
 
-    subgraph Server [Backend (Express + Node.js)]
+    subgraph Server ["Backend (Express + Node.js)"]
         E -->|POST /api/generate with JWT| I[Auth Middleware]
         I -->|Valid JWT| J[Generation Controller]
         H -->|GET /api/history| K[History Controller]
     end
 
-    subgraph External [External Services / DB]
+    subgraph External ["External Services / DB"]
         J -->|2. Request UI Generation| L[Gemini API]
         L -->|3. Return Clean HTML| J
-        J -->|Save Record| M[(Supabase Postgres)]
+        J -->|Save Record| M[("Supabase Postgres")]
         K -->|Fetch User Records| M
     end
 
