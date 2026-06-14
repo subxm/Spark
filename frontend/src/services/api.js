@@ -13,6 +13,27 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
+// Intercept 401 Unauthorized responses to handle token expiration/invalidation
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      const url = error.config && error.config.url ? error.config.url : "";
+      const isAuthUrl =
+        url.includes("/api/auth/login") ||
+        url.includes("/api/auth/register") ||
+        url.includes("/api/auth/google");
+
+      if (!isAuthUrl) {
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const registerUser = (data) => API.post("/api/auth/register", data);
 export const loginUser = (data) => API.post("/api/auth/login", data);
 export const loginWithGoogle = (idToken) => API.post("/api/auth/google", { idToken });
